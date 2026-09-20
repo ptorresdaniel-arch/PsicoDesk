@@ -1,6 +1,7 @@
 from uuid import UUID, uuid4
+from datetime import datetime
 
-from sqlalchemy import UUID as SQLAlchemyUUID, String
+from sqlalchemy import UUID as SQLAlchemyUUID, String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -19,6 +20,11 @@ class User(Base):
         index=True,
         nullable=False,
     )
+    password_hash: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    
     first_name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
@@ -27,8 +33,25 @@ class User(Base):
         String(100),
         nullable=False,
     )
+    phone: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+    )
+    professional_license: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    specialty: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    avatar_path: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
     
-    password_hash: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
