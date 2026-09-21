@@ -13,7 +13,10 @@ from app.users.service import get_user_by_email
 from app.users.models import User
 from app.users.schemas import UserRead
 
-
+from app.users.service import (
+    get_user_by_email,
+    update_last_login,
+)
 
 router = APIRouter(
     prefix="/auth",
@@ -47,7 +50,8 @@ def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="El usuario está inactivo.",
         )
-
+        
+    user = update_last_login(db, user)
     access_token = create_access_token(user.id)
     
     return LoginResponse(

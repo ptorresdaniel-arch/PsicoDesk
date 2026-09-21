@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -27,6 +28,14 @@ def create_user(db: Session, user_data: UserCreate) -> User:
         specialty=user_data.specialty,
 )
     db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return user
+
+def update_last_login(db: Session, user: User) -> User:
+    user.last_login_at = datetime.now(timezone.utc)
+    
     db.commit()
     db.refresh(user)
     

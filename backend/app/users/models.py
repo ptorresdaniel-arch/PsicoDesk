@@ -2,9 +2,11 @@ from uuid import UUID, uuid4
 from datetime import datetime, timezone
 
 from sqlalchemy import UUID as SQLAlchemyUUID, String, DateTime, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+from app.auth.models import Role, user_roles
 
 class User(Base):
     __tablename__ = "users"
@@ -70,4 +72,9 @@ class User(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
+    )
+    
+    roles: Mapped[list["Role"]] = relationship(
+        secondary="user_roles",
+        back_populates="users",
     )

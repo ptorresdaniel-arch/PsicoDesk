@@ -1,11 +1,15 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.users.schemas import UserCreate, UserRead
 from app.users.service import create_user, get_user_by_email
+
+from app.auth.dependencies import require_permission
+from app.users.models import User
 
 
 router = APIRouter(
@@ -34,3 +38,13 @@ def register_user(
         )
 
     return create_user(db, user_data)
+
+@router.get(
+    "/",
+    response_model=list[UserRead],
+)
+def list_users(
+    db: DbSession,
+    current_user: Annotated[User, Depends(require_permission("users.read")),],
+) -> list[User]:
+    return list(db.scalars(select(User)).all())

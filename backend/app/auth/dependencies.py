@@ -61,3 +61,26 @@ def get_current_user(
         )
 
     return user
+
+def require_permission(permission_code: str):
+    def permission_dependency(
+        current_user: Annotated[
+            User,
+            Depends(get_current_user),
+        ],
+    ) -> User:
+        has_permission = any(
+            permission.code == permission_code
+            for role in current_user.roles
+            for permission in role.permissions
+        )
+
+        if not has_permission:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permiso para realizar esta acción.",
+            )
+
+        return current_user
+
+    return permission_dependency
