@@ -7,6 +7,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 from app.auth.models import Role, user_roles
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.patients.models import Patient
 
 class User(Base):
     __tablename__ = "users"
@@ -77,4 +80,8 @@ class User(Base):
     roles: Mapped[list["Role"]] = relationship(
         secondary="user_roles",
         back_populates="users",
+    )
+    
+    patients: Mapped[list["Patient"]] = relationship(
+        back_populates="professional",
     )
