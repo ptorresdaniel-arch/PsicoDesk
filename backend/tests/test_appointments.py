@@ -293,3 +293,85 @@ def test_get_appointments_by_date_range(
 
     assert len(appointments) == 1
     assert appointments[0]["title"] == "Dentro del rango"
+    
+def test_update_appointment_status_allowed(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Estado",
+        },
+    )
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=3)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    appointment_id = appointment_response.json()["id"]
+
+    response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "confirmed",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "confirmed"
+    
+def test_update_appointment_status_allowed(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Estado",
+        },
+    )
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=3)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    appointment_id = appointment_response.json()["id"]
+
+    response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "confirmed",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "confirmed"

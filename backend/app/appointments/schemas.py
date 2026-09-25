@@ -1,6 +1,8 @@
 from datetime import datetime
 from uuid import UUID
 
+from app.appointments.enums import AppointmentStatus
+
 from pydantic import BaseModel, Field
 
 
@@ -29,7 +31,7 @@ class AppointmentUpdate(BaseModel):
     start_time: datetime | None = None
     end_time: datetime | None = None
 
-    status: str | None = None
+    status: AppointmentStatus | None = None
 
     title: str | None = Field(
         default=None,

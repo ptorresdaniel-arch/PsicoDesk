@@ -9,6 +9,9 @@ from app.appointments.schemas import (
     AppointmentCreate,
     AppointmentUpdate,
 )
+from app.appointments.validators import can_change_status
+from app.appointments.enums import AppointmentStatus
+
 from app.patients.models import Patient
 
 
@@ -131,7 +134,20 @@ def update_appointment(
     update_data = data.model_dump(
         exclude_unset=True,
     )
-
+    if "status" in update_data:
+        current_status = AppointmentStatus(
+            appointment.status
+        )
+        new_status = update_data["status"]
+        
+        if not can_change_status(
+            current_status,
+            new_status,
+        ):
+            raise ValueError(
+                "Cambio de estado no permitido."
+            )
+            
     for field, value in update_data.items():
         setattr(
             appointment,
