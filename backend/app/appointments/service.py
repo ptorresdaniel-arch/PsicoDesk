@@ -12,6 +12,8 @@ from app.appointments.schemas import (
 from app.appointments.validators import can_change_status
 from app.appointments.enums import AppointmentStatus
 
+from app.clinical_sessions.models import ClinicalSession
+
 from app.patients.models import Patient
 
 
@@ -192,3 +194,39 @@ def get_appointments_by_date_range(
     return list(
         db.scalars(statement).all()
     )
+
+def create_clinical_session_from_appointment(
+    db: Session,
+    appointment: Appointment,
+):
+
+    if appointment.status != AppointmentStatus.completed:
+        raise ValueError(
+            "Solo se pueden crear sesiones desde citas realizadas."
+        )
+
+    if appointment.clinical_session:
+        raise ValueError(
+            "La cita ya tiene una sesión clínica asociada."
+        )
+
+    duration = int(
+        (
+            appointment.end_time -
+            appointment.start_time
+        ).total_seconds()
+        / 60
+    )
+
+    clinical_session = ClinicalSession(
+        appointment_id=appointment.id,
+        patient_id=appointment.patient_id,
+        session_date=appointment.start_time,
+        duration_minutes=duration,
+    )
+
+    db.add(clinical_session)
+    db.commit()
+    db.refresh(clinical_session)
+
+    return clinical_session

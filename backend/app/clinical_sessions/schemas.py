@@ -43,6 +43,7 @@ class ClinicalSessionUpdate(BaseModel):
 class ClinicalSessionRead(BaseModel):
     id: UUID
     patient_id: UUID
+    appointment_id: UUID | None
 
     session_date: datetime
 

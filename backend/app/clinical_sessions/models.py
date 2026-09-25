@@ -12,6 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.patients.models import Patient
+from app.appointments.models import Appointment
 
 
 class ClinicalSession(Base):
@@ -28,6 +29,16 @@ class ClinicalSession(Base):
             ondelete="CASCADE",
         ),
         nullable=False,
+        index=True,
+    )
+    
+    appointment_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey(
+            "appointments.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+        unique=True,
         index=True,
     )
 
@@ -67,4 +78,9 @@ class ClinicalSession(Base):
     patient = relationship(
         "Patient",
         back_populates="clinical_sessions",
+    )
+    
+    appointment = relationship(
+        "Appointment",
+        back_populates="clinical_session",
     )

@@ -97,3 +97,9 @@ class Appointment(Base):
         "Patient",
         back_populates="appointments",
     )
+    
+    clinical_session = relationship(
+        "ClinicalSession",
+        back_populates="appointment",
+        uselist=False,
+    )

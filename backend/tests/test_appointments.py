@@ -375,3 +375,175 @@ def test_update_appointment_status_allowed(
 
     assert response.status_code == 200
     assert response.json()["status"] == "confirmed"
+    
+def test_create_clinical_session_from_completed_appointment(
+    client,
+    professional_headers,
+):
+    # Crear paciente
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Integracion",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    # Crear cita
+    start = datetime.now(timezone.utc) + timedelta(days=5)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Sesión integración",
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    # Pasar a confirmada
+    confirm_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "confirmed",
+        },
+    )
+
+    assert confirm_response.status_code == 200
+
+    # Pasar a realizada
+    complete_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "completed",
+        },
+    )
+
+    assert complete_response.status_code == 200
+
+    # Crear sesión clínica
+    session_response = client.post(
+        f"/appointments/{appointment_id}/clinical-session",
+        headers=professional_headers,
+    )
+
+    assert session_response.status_code == 201
+
+    session = session_response.json()
+
+    assert session["patient_id"] == patient_id
+    assert session["appointment_id"] == appointment_id
+    assert session["duration_minutes"] == 50
+
+def test_cannot_create_clinical_session_from_pending_appointment(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Pendiente",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=6)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    response = client.post(
+        f"/appointments/{appointment_id}/clinical-session",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 400
+    
+def test_cannot_create_second_clinical_session_for_same_appointment(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Duplicado",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=7)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    appointment_id = appointment_response.json()["id"]
+
+    client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "confirmed"},
+    )
+
+    client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "completed"},
+    )
+
+    first_response = client.post(
+        f"/appointments/{appointment_id}/clinical-session",
+        headers=professional_headers,
+    )
+
+    assert first_response.status_code == 201
+
+    second_response = client.post(
+        f"/appointments/{appointment_id}/clinical-session",
+        headers=professional_headers,
+    )
+
+    assert second_response.status_code == 400

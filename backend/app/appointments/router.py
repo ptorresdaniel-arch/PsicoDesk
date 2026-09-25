@@ -20,9 +20,11 @@ from app.appointments.service import (
     get_appointment_by_id,
     get_professional_appointments,
     update_appointment,
-    get_appointments_by_date_range
+    get_appointments_by_date_range,
+    create_clinical_session_from_appointment,
 )
 
+from app.clinical_sessions.schemas import ClinicalSessionRead
 
 router = APIRouter(
     prefix="/appointments",
@@ -178,3 +180,37 @@ def delete(
         appointment,
     )
     
+@router.post(
+    "/{appointment_id}/clinical-session",
+    response_model=ClinicalSessionRead,
+    status_code=201,
+)
+def create_session_from_appointment(
+    appointment_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    appointment = get_appointment_by_id(
+        db,
+        appointment_id,
+        current_user.id,
+    )
+
+    if appointment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Cita no encontrada",
+        )
+
+    try:
+        return create_clinical_session_from_appointment(
+            db,
+            appointment,
+        )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )
