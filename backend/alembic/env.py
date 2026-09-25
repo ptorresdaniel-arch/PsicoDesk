@@ -7,6 +7,7 @@ from app.users.models import User
 from app.auth import models as auth_models
 from app.patients import models as patient_models
 from app.clinical_sessions import models as clinical_session_models
+from app.appointments import models as appointments_models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

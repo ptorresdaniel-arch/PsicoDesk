@@ -85,3 +85,9 @@ class User(Base):
     patients: Mapped[list["Patient"]] = relationship(
         back_populates="professional",
     )
+    
+    appointments = relationship(
+        "Appointment",
+        back_populates="professional",
+        cascade="all, delete-orphan",
+    )

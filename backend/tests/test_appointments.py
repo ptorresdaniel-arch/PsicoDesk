@@ -1,0 +1,224 @@
+from datetime import datetime, timedelta, timezone
+
+from fastapi.testclient import TestClient
+
+
+def test_create_appointment(
+    client: TestClient,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Agenda",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=1)
+    end = start + timedelta(minutes=50)
+
+    response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Primera consulta",
+            "reason": "Evaluación inicial",
+            "notes": "Paciente nuevo",
+        },
+    )
+
+    assert response.status_code == 201
+
+    data = response.json()
+
+    assert data["patient_id"] == patient_id
+    assert data["status"] == "scheduled"
+    assert data["title"] == "Primera consulta"
+    
+from datetime import datetime, timedelta, timezone
+
+
+def test_professional_cannot_create_appointment_for_other_professional_patient(
+    client,
+    professional_factory,
+):
+    professional_a = professional_factory()
+    professional_b = professional_factory()
+
+    # Profesional A crea paciente
+    patient_response = client.post(
+        "/patients",
+        headers=professional_a,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Privado",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=1)
+    end = start + timedelta(minutes=50)
+
+    # Profesional B intenta agendarlo
+    response = client.post(
+        "/appointments",
+        headers=professional_b,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Intento inválido",
+        },
+    )
+
+    assert response.status_code == 404
+def test_cannot_create_overlapping_appointment(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Horario",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=1)
+    end = start + timedelta(hours=1)
+
+    first = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Primera cita",
+        },
+    )
+
+    assert first.status_code == 201
+
+    conflict_start = start + timedelta(minutes=30)
+    conflict_end = end + timedelta(minutes=30)
+
+    second = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": conflict_start.isoformat(),
+            "end_time": conflict_end.isoformat(),
+            "title": "Cita conflictiva",
+        },
+    )
+
+    assert second.status_code == 400
+
+def test_appointment_crud(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "CRUD",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=2)
+    end = start + timedelta(minutes=45)
+
+    create_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Cita CRUD",
+            "reason": "Prueba",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    appointment_id = create_response.json()["id"]
+
+    # Obtener
+    get_response = client.get(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+    )
+
+    assert get_response.status_code == 200
+
+    # Listar
+    list_response = client.get(
+        "/appointments",
+        headers=professional_headers,
+    )
+
+    assert list_response.status_code == 200
+
+    assert any(
+        item["id"] == appointment_id
+        for item in list_response.json()
+    )
+
+    # Actualizar
+    update_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "confirmed",
+            "notes": "Paciente confirmado.",
+        },
+    )
+
+    assert update_response.status_code == 200
+
+    updated = update_response.json()
+
+    assert updated["status"] == "confirmed"
+    assert updated["notes"] == "Paciente confirmado."
+
+    # Eliminar
+    delete_response = client.delete(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+    )
+
+    assert delete_response.status_code == 204
+
+    # Confirmar eliminación
+    final_response = client.get(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+    )
+
+    assert final_response.status_code == 404
