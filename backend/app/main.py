@@ -9,6 +9,10 @@ from app.appointments.router import router as appointments_router
 app = FastAPI(
     title="PsicoDesk API",
     version="0.1.0",
+    description=(
+        "API para la gestión de pacientes, agenda "
+        "y atención clínica psicológica."
+    )
 )
 
 

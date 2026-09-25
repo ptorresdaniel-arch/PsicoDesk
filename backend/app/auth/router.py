@@ -20,7 +20,7 @@ from app.users.service import (
 
 router = APIRouter(
     prefix="/auth",
-    tags=["auth"],
+    tags=["Autenticación"],
 )
 
 DbSession = Annotated[Session, Depends(get_db)]

@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import datetime
 
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
@@ -151,3 +152,27 @@ def delete_appointment(
 
     db.delete(appointment)
     db.commit()
+
+
+def get_appointments_by_date_range(
+    db: Session,
+    professional_id: UUID,
+    start_date: datetime,
+    end_date: datetime,
+):
+
+    statement = (
+        select(Appointment)
+        .where(
+            Appointment.professional_id == professional_id,
+            Appointment.start_time >= start_date,
+            Appointment.start_time <= end_date,
+        )
+        .order_by(
+            Appointment.start_time,
+        )
+    )
+
+    return list(
+        db.scalars(statement).all()
+    )

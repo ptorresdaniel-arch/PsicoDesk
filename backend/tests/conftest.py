@@ -132,6 +132,9 @@ def professional_factory(
         role = Role(
             name=f"professional-test-{unique_id}",
         )
+        
+        db.add(role)
+        db.flush()
 
         permission_codes = [
             "patients.read",
@@ -156,7 +159,6 @@ def professional_factory(
 
         user.roles.append(role)
 
-        db.add(role)
         db.commit()
 
         login_response = client.post(

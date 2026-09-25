@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -19,12 +20,13 @@ from app.appointments.service import (
     get_appointment_by_id,
     get_professional_appointments,
     update_appointment,
+    get_appointments_by_date_range
 )
 
 
 router = APIRouter(
     prefix="/appointments",
-    tags=["Appointments"],
+    tags=["Agenda"],
 )
 
 
@@ -73,6 +75,24 @@ def list_my_appointments(
     return get_professional_appointments(
         db,
         current_user.id,
+    )
+
+@router.get(
+    "/calendar",
+    response_model=list[AppointmentRead],
+)
+def calendar(
+    start_date: datetime,
+    end_date: datetime,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    return get_appointments_by_date_range(
+        db,
+        current_user.id,
+        start_date,
+        end_date,
     )
 
 
@@ -157,3 +177,4 @@ def delete(
         db,
         appointment,
     )
+    

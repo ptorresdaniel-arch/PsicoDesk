@@ -14,7 +14,7 @@ from app.users.models import User
 
 router = APIRouter(
     prefix="/users",
-    tags=["users"],
+    tags=["Usuarios"],
 )
 
 DbSession = Annotated[Session, Depends(get_db)]

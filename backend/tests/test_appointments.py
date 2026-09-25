@@ -222,3 +222,74 @@ def test_appointment_crud(
     )
 
     assert final_response.status_code == 404
+
+def test_get_appointments_by_date_range(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Calendario",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    base_date = datetime.now(timezone.utc) + timedelta(days=10)
+
+    # Cita dentro del rango
+    inside_start = base_date.replace(
+        hour=10,
+        minute=0,
+    )
+    inside_end = inside_start + timedelta(
+        minutes=50
+    )
+
+    inside_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": inside_start.isoformat(),
+            "end_time": inside_end.isoformat(),
+            "title": "Dentro del rango",
+        },
+    )
+
+    assert inside_response.status_code == 201
+
+    # Consulta del día
+    response = client.get(
+        "/appointments/calendar",
+        headers=professional_headers,
+        params={
+            "start_date": (
+                base_date.replace(
+                    hour=0,
+                    minute=0,
+                )
+                .isoformat().replace("+00:00", "Z")
+            ),
+            "end_date": (
+                base_date.replace(
+                    hour=23,
+                    minute=59,
+                )
+                .isoformat().replace("+00:00", "Z")
+            ),
+        },
+    )
+    
+    print(response.json())
+    assert response.status_code == 200
+
+    appointments = response.json()
+
+    assert len(appointments) == 1
+    assert appointments[0]["title"] == "Dentro del rango"

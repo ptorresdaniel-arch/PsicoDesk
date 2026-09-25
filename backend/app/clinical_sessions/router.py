@@ -24,7 +24,7 @@ from app.clinical_sessions.service import (
 
 router = APIRouter(
     prefix="/clinical-sessions",
-    tags=["Clinical Sessions"],
+    tags=["Sesiones clínicas"],
 )
 
 
