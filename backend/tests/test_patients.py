@@ -291,3 +291,106 @@ def test_patient_profile_with_related_data(
     assert profile["last_session"] is not None
 
     assert len(profile["upcoming_appointments"]) == 0
+    
+def test_search_patient_by_name(
+    client,
+    professional_headers,
+):
+    create_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Juan",
+            "last_name": "Pérez",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    response = client.get(
+        "/patients?search=Juan",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 200
+
+    patients = response.json()
+
+    assert len(patients) == 1
+    assert patients[0]["first_name"] == "Juan"
+    
+def test_search_patient_by_identification(
+    client,
+    professional_headers,
+):
+    create_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Ana",
+            "last_name": "Gómez",
+            "identification": "12345678-9",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    response = client.get(
+        "/patients?search=12345678",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 200
+
+    patients = response.json()
+
+    assert len(patients) == 1
+    assert patients[0]["identification"] == "12345678-9"
+    
+def test_filter_patients_by_active_status(
+    client,
+    professional_headers,
+):
+    active_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Activo",
+            "last_name": "Paciente",
+        },
+    )
+
+    assert active_response.status_code == 201
+
+    inactive_id = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Inactivo",
+            "last_name": "Paciente",
+        },
+    ).json()["id"]
+
+    update_response = client.patch(
+        f"/patients/{inactive_id}",
+        headers=professional_headers,
+        json={
+            "is_active": False,
+        },
+    )
+
+    assert update_response.status_code == 200
+
+    response = client.get(
+        "/patients?is_active=false",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 200
+
+    patients = response.json()
+    print(patients)
+    assert len(patients) >= 1
+    for patient in patients:
+        assert patient["is_active"] is False
+        assert all(patient["last_name"] == "Paciente" for patient in patients)

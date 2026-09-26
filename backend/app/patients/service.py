@@ -1,14 +1,18 @@
 from uuid import UUID
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.patients.models import Patient
-from app.patients.schemas import PatientCreate
-from app.users.models import User
 from app.patients.schemas import PatientCreate, PatientUpdate
+from app.patients.filters import PatientFilters
+
+from app.users.models import User
+
 from app.appointments.enums import AppointmentStatus
+
+
 
 def create_patient(
     db: Session,
@@ -53,14 +57,37 @@ def delete_patient(
 def get_patients_by_professional(
     db: Session,
     professional_id: UUID,
+    filters: PatientFilters,
 ) -> list[Patient]:
-    statement = (
-        select(Patient)
-        .where(Patient.professional_id == professional_id)
-        .order_by(Patient.last_name, Patient.first_name)
+
+    statement = select(Patient).where(
+        Patient.professional_id == professional_id,
     )
 
-    return list(db.scalars(statement).all())
+    if filters.search:
+        search = f"%{filters.search}%"
+
+        statement = statement.where(
+            or_(
+                Patient.first_name.ilike(search),
+                Patient.last_name.ilike(search),
+                Patient.identification.ilike(search),
+            )
+        )
+
+    if filters.is_active is not None:
+        statement = statement.where(
+            Patient.is_active == filters.is_active,
+        )
+
+    statement = statement.order_by(
+        Patient.last_name,
+        Patient.first_name,
+    )
+
+    return list(
+        db.scalars(statement).all()
+    )
 
 
 def get_patient_by_id(

@@ -17,6 +17,7 @@ from app.patients.service import (
     get_patient_profile,
 )
 from app.patients.profile_schemas import PatientProfileRead
+from app.patients.filters import PatientFilters
 from app.users.models import User
 
 
@@ -54,14 +55,25 @@ def register_patient(
 )
 def list_patients(
     db: DbSession,
+    filters: Annotated[
+        PatientFilters,
+        Depends(),
+    ],
     current_user: Annotated[
         User,
         Depends(require_permission("patients.read")),
     ],
 ) -> list[Patient]:
+    print(
+    "SEARCH:",
+    filters.search,
+    "ACTIVE:",
+    filters.is_active,
+)
     return get_patients_by_professional(
         db,
         current_user.id,
+        filters,
     )
 
 @router.get(
