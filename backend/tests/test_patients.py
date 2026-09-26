@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-
+from datetime import datetime, timezone, timedelta
 
 def test_create_patient_without_permission(
     client: TestClient,
@@ -191,3 +191,103 @@ def test_professional_cannot_access_another_professionals_patient(
     )
 
     assert owner_response.status_code == 200
+    
+def test_patient_profile(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Perfil",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    response = client.get(
+        f"/patients/{patient_id}/profile",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 200
+
+    profile = response.json()
+
+    assert profile["id"] == patient_id
+    assert profile["first_name"] == "Paciente"
+    assert profile["last_name"] == "Perfil"
+    assert "upcoming_appointments" in profile
+    assert "clinical_sessions" in profile
+    assert "last_session" in profile
+    
+def test_patient_profile_with_related_data(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Completo",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=3)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "confirmed"},
+    )
+
+    client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "completed"},
+    )
+
+    session_response = client.post(
+        f"/appointments/{appointment_id}/clinical-session",
+        headers=professional_headers,
+    )
+
+    assert session_response.status_code == 201
+
+    profile_response = client.get(
+        f"/patients/{patient_id}/profile",
+        headers=professional_headers,
+    )
+
+    assert profile_response.status_code == 200
+
+    profile = profile_response.json()
+
+    assert len(profile["clinical_sessions"]) == 1
+    assert profile["last_session"] is not None
+
+    assert len(profile["upcoming_appointments"]) == 0

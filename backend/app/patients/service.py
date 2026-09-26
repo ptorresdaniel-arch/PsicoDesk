@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,7 +8,7 @@ from app.patients.models import Patient
 from app.patients.schemas import PatientCreate
 from app.users.models import User
 from app.patients.schemas import PatientCreate, PatientUpdate
-
+from app.appointments.enums import AppointmentStatus
 
 def create_patient(
     db: Session,
@@ -73,3 +74,46 @@ def get_patient_by_id(
     )
 
     return db.scalar(statement)
+
+def get_patient_profile(
+    patient: Patient,
+) -> dict:
+
+    now = datetime.now(timezone.utc)
+
+    upcoming = [
+        appointment
+        for appointment in patient.appointments
+        if(
+            appointment.start_time >= now
+            and appointment.status not in [
+                AppointmentStatus.completed,
+                AppointmentStatus.cancelled,
+                AppointmentStatus.no_show,
+            ]
+        )
+    ]
+
+    sessions = sorted(
+        patient.clinical_sessions,
+        key=lambda x: x.session_date,
+        reverse=True,
+    )
+
+    return {
+        "id": patient.id,
+        "first_name": patient.first_name,
+        "last_name": patient.last_name,
+        "email": patient.email,
+        "phone": patient.phone,
+        "upcoming_appointments": sorted(
+            upcoming,
+            key=lambda x: x.start_time,
+        ),
+        "clinical_sessions": sessions,
+        "last_session": (
+            sessions[0]
+            if sessions
+            else None
+        ),
+    }

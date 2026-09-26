@@ -14,7 +14,9 @@ from app.patients.service import (
     get_patient_by_id,
     get_patients_by_professional,
     update_patient,
+    get_patient_profile,
 )
+from app.patients.profile_schemas import PatientProfileRead
 from app.users.models import User
 
 
@@ -62,6 +64,33 @@ def list_patients(
         current_user.id,
     )
 
+@router.get(
+    "/{patient_id}/profile",
+    response_model=PatientProfileRead,
+)
+def get_patient_profile_view(
+    patient_id: UUID,
+    db: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("patients.read")),
+    ],
+):
+    patient = get_patient_by_id(
+        db,
+        patient_id,
+        current_user.id,
+    )
+
+    if patient is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Paciente no encontrado.",
+        )
+
+    return get_patient_profile(
+        patient,
+    )
 
 @router.get(
     "/{patient_id}",
