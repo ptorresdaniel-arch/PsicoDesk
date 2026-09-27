@@ -43,3 +43,9 @@ class PatientRead(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    
+class PatientListRead(BaseModel):
+    items: list[PatientRead]
+    total: int
+    page: int
+    limit: int

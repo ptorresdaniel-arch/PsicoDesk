@@ -1,7 +1,7 @@
 from uuid import UUID
 from datetime import datetime, timezone
 
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.orm import Session
 
 from app.patients.models import Patient
@@ -53,14 +53,12 @@ def delete_patient(
     db.delete(patient)
     db.commit()
 
-
-def get_patients_by_professional(
-    db: Session,
+def apply_patient_filters(
+    statement,
     professional_id: UUID,
     filters: PatientFilters,
-) -> list[Patient]:
-
-    statement = select(Patient).where(
+):
+    statement = statement.where(
         Patient.professional_id == professional_id,
     )
 
@@ -80,14 +78,51 @@ def get_patients_by_professional(
             Patient.is_active == filters.is_active,
         )
 
-    statement = statement.order_by(
-        Patient.last_name,
-        Patient.first_name,
+    return statement
+
+def get_patients_by_professional(
+    db: Session,
+    professional_id: UUID,
+    filters: PatientFilters,
+):
+    base_statement = select(Patient)
+
+    filtered_statement = apply_patient_filters(
+        base_statement,
+        professional_id,
+        filters,
     )
 
-    return list(
+    total = db.scalar(
+        select(func.count())
+        .select_from(filtered_statement.subquery()
+        )
+    )
+
+    statement = (
+        filtered_statement
+        .order_by(
+            Patient.last_name,
+            Patient.first_name,
+        )
+        .offset(
+            (filters.page - 1) * filters.limit
+        )
+        .limit(
+            filters.limit,
+        )
+    )
+
+    items = list(
         db.scalars(statement).all()
     )
+
+    return {
+        "items": items,
+        "total": total,
+        "page": filters.page,
+        "limit": filters.limit,
+    }
 
 
 def get_patient_by_id(

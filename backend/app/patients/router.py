@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import require_permission
 from app.core.database import get_db
 from app.patients.models import Patient
-from app.patients.schemas import PatientCreate, PatientRead, PatientUpdate
+from app.patients.schemas import PatientCreate, PatientRead, PatientUpdate, PatientListRead
 from app.patients.service import (
     create_patient,
     delete_patient,
@@ -51,7 +51,7 @@ def register_patient(
 
 @router.get(
     "",
-    response_model=list[PatientRead],
+    response_model=PatientListRead,
 )
 def list_patients(
     db: DbSession,
@@ -64,12 +64,7 @@ def list_patients(
         Depends(require_permission("patients.read")),
     ],
 ) -> list[Patient]:
-    print(
-    "SEARCH:",
-    filters.search,
-    "ACTIVE:",
-    filters.is_active,
-)
+    
     return get_patients_by_professional(
         db,
         current_user.id,

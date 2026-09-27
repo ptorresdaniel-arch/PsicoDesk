@@ -81,8 +81,11 @@ def test_patient_crud(
 
     patients = list_response.json()
 
-    assert len(patients) == 1
-    assert patients[0]["id"] == patient_id
+    assert patients["total"] == 1
+    assert len(patients["items"]) == 1
+    assert patients["items"][0]["id"] == patient_id
+    assert patients["page"] == 1
+    assert patients["limit"] == 20
 
     # GET
     get_response = client.get(
@@ -155,7 +158,7 @@ def test_professional_cannot_access_another_professionals_patient(
     )
 
     assert list_response.status_code == 200
-    assert list_response.json() == []
+    assert list_response.json()["items"] == []
 
     # B tampoco debe poder obtenerlo directamente.
     get_response = client.get(
@@ -316,8 +319,8 @@ def test_search_patient_by_name(
 
     patients = response.json()
 
-    assert len(patients) == 1
-    assert patients[0]["first_name"] == "Juan"
+    assert len(patients["items"]) == 1
+    assert patients["items"][0]["first_name"] == "Juan"
     
 def test_search_patient_by_identification(
     client,
@@ -343,9 +346,10 @@ def test_search_patient_by_identification(
     assert response.status_code == 200
 
     patients = response.json()
-
-    assert len(patients) == 1
-    assert patients[0]["identification"] == "12345678-9"
+    
+    assert patients["total"] == 1    
+    assert len(patients["items"]) == 1
+    assert patients["items"][0]["identification"] == "12345678-9"
     
 def test_filter_patients_by_active_status(
     client,
@@ -388,7 +392,7 @@ def test_filter_patients_by_active_status(
 
     assert response.status_code == 200
 
-    patients = response.json()
+    patients = response.json()["items"]
     print(patients)
     assert len(patients) >= 1
     for patient in patients:
