@@ -2,7 +2,7 @@ from uuid import UUID
 from datetime import datetime
 
 from sqlalchemy import select, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.appointments.models import Appointment
 from app.appointments.schemas import (
@@ -194,6 +194,49 @@ def get_appointments_by_date_range(
     return list(
         db.scalars(statement).all()
     )
+    
+def get_calendar_appointments(
+    db: Session,
+    professional_id: UUID,
+    start_date: datetime,
+    end_date: datetime,
+):
+
+    statement = (
+        select(Appointment)
+        .options(
+            joinedload(
+                Appointment.patient
+            )
+        )
+        .where(
+            Appointment.professional_id == professional_id,
+            Appointment.start_time >= start_date,
+            Appointment.start_time <= end_date,
+        )
+        .order_by(
+            Appointment.start_time,
+        )
+    )
+
+    appointments = list(
+        db.scalars(statement).all()
+    )
+
+    return [
+        {
+            "id": appointment.id,
+            "patient_name": (
+                f"{appointment.patient.first_name} "
+                f"{appointment.patient.last_name}"
+            ),
+            "start_time": appointment.start_time,
+            "end_time": appointment.end_time,
+            "status": appointment.status,
+            "title": appointment.title,
+        }
+        for appointment in appointments
+    ]
 
 def create_clinical_session_from_appointment(
     db: Session,

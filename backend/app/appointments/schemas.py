@@ -69,3 +69,19 @@ class AppointmentRead(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+class AppointmentCalendarRead(BaseModel):
+    id: UUID
+
+    patient_name: str
+
+    start_time: datetime
+    end_time: datetime
+
+    status: str
+    
+    title: str | None
+
+    model_config = {
+        "from_attributes": True
+    }

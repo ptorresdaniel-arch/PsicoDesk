@@ -12,8 +12,8 @@ from app.appointments.schemas import (
     AppointmentCreate,
     AppointmentRead,
     AppointmentUpdate,
+    AppointmentCalendarRead,
 )
-
 from app.appointments.service import (
     create_appointment,
     delete_appointment,
@@ -22,6 +22,7 @@ from app.appointments.service import (
     update_appointment,
     get_appointments_by_date_range,
     create_clinical_session_from_appointment,
+    get_calendar_appointments,
 )
 
 from app.clinical_sessions.schemas import ClinicalSessionRead
@@ -81,7 +82,7 @@ def list_my_appointments(
 
 @router.get(
     "/calendar",
-    response_model=list[AppointmentRead],
+    response_model=list[AppointmentCalendarRead],
 )
 def calendar(
     start_date: datetime,
@@ -90,7 +91,7 @@ def calendar(
     current_user: User = Depends(get_current_user),
 ):
 
-    return get_appointments_by_date_range(
+    return get_calendar_appointments(
         db,
         current_user.id,
         start_date,
