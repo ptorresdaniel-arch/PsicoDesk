@@ -161,6 +161,15 @@ def get_patient_profile(
         key=lambda x: x.session_date,
         reverse=True,
     )
+    
+    next_appointment = (
+        sorted(
+            upcoming,
+            key=lambda x: x.start_time,
+        )[0]
+        if upcoming
+        else None
+    )
 
     return {
         "id": patient.id,
@@ -168,6 +177,19 @@ def get_patient_profile(
         "last_name": patient.last_name,
         "email": patient.email,
         "phone": patient.phone,
+        "summary": {
+            "total_sessions": len(sessions),
+            "last_session_date": (
+                sessions[0].session_date
+                if sessions
+                else None
+            ),
+            "next_appointment_date": (
+                next_appointment.start_time
+                if next_appointment
+                else None
+            ),
+        },
         "upcoming_appointments": sorted(
             upcoming,
             key=lambda x: x.start_time,

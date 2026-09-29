@@ -398,3 +398,95 @@ def test_filter_patients_by_active_status(
     for patient in patients:
         assert patient["is_active"] is False
         assert all(patient["last_name"] == "Paciente" for patient in patients)
+    
+def test_patient_profile_summary(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Ana",
+            "last_name": "Resumen",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    # Cita realizada
+    past_start = datetime.now(timezone.utc) - timedelta(days=3)
+    past_end = past_start + timedelta(minutes=50)
+
+    past_appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": past_start.isoformat(),
+            "end_time": past_end.isoformat(),
+        },
+    )
+
+    assert past_appointment_response.status_code == 201
+
+    past_appointment_id = (
+        past_appointment_response.json()["id"]
+    )
+
+    client.patch(
+        f"/appointments/{past_appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "confirmed",
+        },
+    )
+
+    client.patch(
+        f"/appointments/{past_appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "completed",
+        },
+    )
+
+    session_response = client.post(
+        f"/appointments/{past_appointment_id}/clinical-session",
+        headers=professional_headers,
+    )
+
+    assert session_response.status_code == 201
+
+    # Cita futura
+    future_start = datetime.now(timezone.utc) + timedelta(days=5)
+    future_end = future_start + timedelta(minutes=50)
+
+    future_appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": future_start.isoformat(),
+            "end_time": future_end.isoformat(),
+        },
+    )
+
+    assert future_appointment_response.status_code == 201
+
+    # Consultar perfil
+    profile_response = client.get(
+        f"/patients/{patient_id}/profile",
+        headers=professional_headers,
+    )
+
+    assert profile_response.status_code == 200
+
+    profile = profile_response.json()
+
+    summary = profile["summary"]
+
+    assert summary["total_sessions"] == 1
+    assert summary["last_session_date"] is not None
+    assert summary["next_appointment_date"] is not None

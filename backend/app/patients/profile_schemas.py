@@ -27,6 +27,10 @@ class PatientProfileSession(BaseModel):
         "from_attributes": True
     }
 
+class PatientProfileSummary(BaseModel):
+    total_sessions: int
+    last_session_date: datetime | None
+    next_appointment_date: datetime | None
 
 class PatientProfileRead(BaseModel):
     id: UUID
@@ -35,6 +39,8 @@ class PatientProfileRead(BaseModel):
     email: str | None
     phone: str | None
 
+    summary: PatientProfileSummary
+    
     upcoming_appointments: list[
         PatientProfileAppointment
     ]
