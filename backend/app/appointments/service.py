@@ -1,7 +1,7 @@
 from uuid import UUID
 from datetime import datetime
 
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.appointments.models import Appointment
@@ -292,3 +292,40 @@ def check_appointment_availability(
         start_time,
         end_time,
     )
+
+def get_appointment_summary(
+    db: Session,
+    professional_id: UUID,
+):
+
+    statement = (
+        select(
+            Appointment.status,
+            func.count(Appointment.id),
+        )
+        .where(
+            Appointment.professional_id == professional_id,
+        )
+        .group_by(
+            Appointment.status,
+        )
+    )
+
+    results = db.execute(statement).all()
+
+    summary = {
+        "total": 0,
+        "scheduled": 0,
+        "confirmed": 0,
+        "completed": 0,
+        "cancelled": 0,
+        "no_show": 0,
+    }
+
+    for status, count in results:
+        summary["total"] += count
+
+        if status in summary:
+            summary[status] = count
+
+    return summary

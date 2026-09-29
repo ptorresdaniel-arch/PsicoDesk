@@ -88,3 +88,12 @@ class AppointmentCalendarRead(BaseModel):
     
 class AppointmentAvailabilityRead(BaseModel):
     available: bool
+    
+class AppointmentSummaryRead(BaseModel):
+    total: int
+
+    scheduled: int
+    confirmed: int
+    completed: int
+    cancelled: int
+    no_show: int

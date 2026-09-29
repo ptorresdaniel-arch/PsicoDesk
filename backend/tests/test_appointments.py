@@ -739,3 +739,81 @@ def test_appointment_availability_conflict(
     data = response.json()
 
     assert data["available"] is False
+
+def test_appointment_summary_empty(
+    client,
+    professional_headers,
+):
+    response = client.get(
+        "/appointments/summary",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 200
+
+    summary = response.json()
+
+    assert summary["total"] == 0
+    assert summary["scheduled"] == 0
+    assert summary["confirmed"] == 0
+    assert summary["completed"] == 0
+    assert summary["cancelled"] == 0
+    assert summary["no_show"] == 0
+
+def test_appointment_summary_with_statuses(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Resumen",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=3)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    # scheduled inicial
+    summary_response = client.get(
+        "/appointments/summary",
+        headers=professional_headers,
+    )
+
+    assert summary_response.json()["scheduled"] == 1
+
+    # confirmed
+    client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "confirmed",
+        },
+    )
+
+    summary_response = client.get(
+        "/appointments/summary",
+        headers=professional_headers,
+    )
+
+    assert summary_response.json()["confirmed"] == 1

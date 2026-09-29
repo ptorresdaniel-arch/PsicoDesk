@@ -14,6 +14,7 @@ from app.appointments.schemas import (
     AppointmentUpdate,
     AppointmentCalendarRead,
     AppointmentAvailabilityRead,
+    AppointmentSummaryRead,
 )
 from app.appointments.service import (
     create_appointment,
@@ -25,6 +26,7 @@ from app.appointments.service import (
     create_clinical_session_from_appointment,
     get_calendar_appointments,
     check_appointment_availability,
+    get_appointment_summary,
 )
 
 from app.clinical_sessions.schemas import ClinicalSessionRead
@@ -127,6 +129,19 @@ def availability(
     return {
         "available": available,
     }
+    
+@router.get(
+    "/summary",
+    response_model=AppointmentSummaryRead,
+)
+def summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return get_appointment_summary(
+        db,
+        current_user.id,
+    )
     
 @router.get(
     "/{appointment_id}",
