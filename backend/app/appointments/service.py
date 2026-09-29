@@ -273,3 +273,22 @@ def create_clinical_session_from_appointment(
     db.refresh(clinical_session)
 
     return clinical_session
+
+def check_appointment_availability(
+    db: Session,
+    professional_id: UUID,
+    start_time: datetime,
+    end_time: datetime,
+) -> bool:
+
+    if end_time <= start_time:
+        raise ValueError(
+            "La hora de término debe ser posterior al inicio."
+        )
+
+    return not has_schedule_conflict(
+        db,
+        professional_id,
+        start_time,
+        end_time,
+    )

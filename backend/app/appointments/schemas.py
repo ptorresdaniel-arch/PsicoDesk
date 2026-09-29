@@ -85,3 +85,6 @@ class AppointmentCalendarRead(BaseModel):
     model_config = {
         "from_attributes": True
     }
+    
+class AppointmentAvailabilityRead(BaseModel):
+    available: bool

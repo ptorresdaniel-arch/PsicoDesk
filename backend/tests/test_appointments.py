@@ -547,3 +547,195 @@ def test_cannot_create_second_clinical_session_for_same_appointment(
     )
 
     assert second_response.status_code == 400
+    
+def test_calendar_returns_patient_data(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Ana",
+            "last_name": "Calendario",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=2)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Sesión inicial",
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    response = client.get(
+        "/appointments/calendar",
+        headers=professional_headers,
+        params={
+            "start_date": (
+                start.replace(
+                    hour=0,
+                    minute=0,
+                )
+                .isoformat()
+            ),
+            "end_date": (
+                start.replace(
+                    hour=23,
+                    minute=59,
+                )
+                .isoformat()
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+
+    appointments = response.json()
+
+    assert len(appointments) == 1
+
+    appointment = appointments[0]
+
+    assert appointment["patient_name"] == "Ana Calendario"
+    assert appointment["title"] == "Sesión inicial"
+    assert appointment["status"] == "scheduled"
+    
+def test_calendar_excludes_out_of_range_appointments(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Rango",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    outside_start = datetime.now(timezone.utc) + timedelta(days=10)
+    outside_end = outside_start + timedelta(minutes=50)
+
+    client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": outside_start.isoformat(),
+            "end_time": outside_end.isoformat(),
+        },
+    )
+
+    target_day = datetime.now(timezone.utc) + timedelta(days=2)
+
+    response = client.get(
+        "/appointments/calendar",
+        headers=professional_headers,
+        params={
+            "start_date": (
+                target_day.replace(
+                    hour=0,
+                    minute=0,
+                )
+                .isoformat()
+            ),
+            "end_date": (
+                target_day.replace(
+                    hour=23,
+                    minute=59,
+                )
+                .isoformat()
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert response.json() == []
+    
+def test_appointment_availability_free_slot(
+    client,
+    professional_headers,
+):
+    start = datetime.now(timezone.utc) + timedelta(days=5)
+    end = start + timedelta(minutes=50)
+
+    response = client.get(
+        "/appointments/availability",
+        headers=professional_headers,
+        params={
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["available"] is True
+
+def test_appointment_availability_conflict(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Disponibilidad",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=5)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    response = client.get(
+        "/appointments/availability",
+        headers=professional_headers,
+        params={
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["available"] is False

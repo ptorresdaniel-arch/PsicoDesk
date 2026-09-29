@@ -13,6 +13,7 @@ from app.appointments.schemas import (
     AppointmentRead,
     AppointmentUpdate,
     AppointmentCalendarRead,
+    AppointmentAvailabilityRead,
 )
 from app.appointments.service import (
     create_appointment,
@@ -23,6 +24,7 @@ from app.appointments.service import (
     get_appointments_by_date_range,
     create_clinical_session_from_appointment,
     get_calendar_appointments,
+    check_appointment_availability,
 )
 
 from app.clinical_sessions.schemas import ClinicalSessionRead
@@ -98,7 +100,34 @@ def calendar(
         end_date,
     )
 
+@router.get(
+    "/availability",
+    response_model=AppointmentAvailabilityRead,
+)
+def availability(
+    start_time: datetime,
+    end_time: datetime,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        available = check_appointment_availability(
+            db,
+            current_user.id,
+            start_time,
+            end_time,
+        )
 
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )
+
+    return {
+        "available": available,
+    }
+    
 @router.get(
     "/{appointment_id}",
     response_model=AppointmentRead,
