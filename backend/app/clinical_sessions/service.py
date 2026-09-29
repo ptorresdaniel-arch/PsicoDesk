@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.clinical_sessions.models import ClinicalSession
@@ -58,8 +58,9 @@ def get_sessions_by_patient(
     db: Session,
     patient_id: UUID,
     professional_id: UUID,
-) -> list[ClinicalSession]:
-
+    page: int,
+    limit: int,
+):
     patient = get_patient_for_professional(
         db,
         patient_id,
@@ -67,19 +68,50 @@ def get_sessions_by_patient(
     )
 
     if patient is None:
-        return []
+        return {
+            "items": [],
+            "total": 0,
+            "page": page,
+            "limit": limit,
+        }
 
-    statement = (
+    base_statement = (
         select(ClinicalSession)
         .where(
             ClinicalSession.patient_id == patient_id
         )
-        .order_by(
-            ClinicalSession.session_date.desc()
+    )
+
+    total = db.scalar(
+        select(func.count())
+        .select_from(
+            base_statement.subquery()
         )
     )
 
-    return list(db.scalars(statement).all())
+    statement = (
+        base_statement
+        .order_by(
+            ClinicalSession.session_date.desc()
+        )
+        .offset(
+            (page - 1) * limit
+        )
+        .limit(
+            limit,
+        )
+    )
+
+    items = list(
+        db.scalars(statement).all()
+    )
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }
 
 
 def get_session_by_id(

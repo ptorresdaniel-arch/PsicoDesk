@@ -59,3 +59,9 @@ class ClinicalSessionRead(BaseModel):
     model_config = {
         "from_attributes": True
     }
+    
+class ClinicalSessionListRead(BaseModel):
+    items: list[ClinicalSessionRead]
+    total:int
+    page: int
+    limit: int

@@ -174,9 +174,13 @@ def test_clinical_session_crud(
     assert list_response.status_code == 200
 
     sessions = list_response.json()
-
-    assert len(sessions) == 1
-    assert sessions[0]["id"] == session_id
+    
+    assert len(sessions["items"]) == 1
+    assert sessions["items"][0]["id"] == session_id
+    
+    assert sessions["total"] == 1
+    assert sessions["page"] == 1
+    assert sessions["limit"] == 20
 
     # Actualizar
     update_response = client.patch(

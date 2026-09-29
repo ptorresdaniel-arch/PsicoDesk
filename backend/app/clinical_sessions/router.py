@@ -11,6 +11,7 @@ from app.clinical_sessions.schemas import (
     ClinicalSessionCreate,
     ClinicalSessionRead,
     ClinicalSessionUpdate,
+    ClinicalSessionListRead,
 )
 
 from app.clinical_sessions.service import (
@@ -55,10 +56,12 @@ def create_session(
 
 @router.get(
     "/patient/{patient_id}",
-    response_model=list[ClinicalSessionRead],
+    response_model=ClinicalSessionListRead,
 )
 def list_patient_sessions(
     patient_id: UUID,
+    page: int = 1,
+    limit: int = 20,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -66,6 +69,8 @@ def list_patient_sessions(
         db,
         patient_id,
         current_user.id,
+        page,
+        limit,
     )
 
 
