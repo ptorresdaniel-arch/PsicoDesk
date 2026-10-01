@@ -84,3 +84,9 @@ class ClinicalSession(Base):
         "Appointment",
         back_populates="clinical_session",
     )
+    
+    notes_history = relationship(
+    "ClinicalSessionNote",
+    back_populates="clinical_session",
+    cascade="all, delete-orphan",
+)

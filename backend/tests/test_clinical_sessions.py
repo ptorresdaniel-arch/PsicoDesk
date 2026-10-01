@@ -214,3 +214,159 @@ def test_clinical_session_crud(
     )
 
     assert get_response.status_code == 404
+    
+def test_create_clinical_session_note(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Notas",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+            "duration_minutes": 50,
+            "summary": "Sesión inicial",
+        },
+    )
+
+    assert session_response.status_code == 201
+
+    session_id = session_response.json()["id"]
+
+    response = client.post(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+        json={
+            "content": "Paciente refiere mejoría del ánimo.",
+        },
+    )
+
+    assert response.status_code == 201
+
+    note = response.json()
+
+    assert note["clinical_session_id"] == session_id
+    assert note["content"] == (
+        "Paciente refiere mejoría del ánimo."
+    )
+    assert note["created_by"] is not None
+    
+def test_list_clinical_session_notes(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Historial",
+        },
+    )
+
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        },
+    )
+
+    session_id = session_response.json()["id"]
+
+    for content in [
+        "Primera observación",
+        "Segunda observación",
+    ]:
+        response = client.post(
+            f"/clinical-sessions/{session_id}/notes",
+            headers=professional_headers,
+            json={
+                "content": content,
+            },
+        )
+
+        assert response.status_code == 201
+
+    response = client.get(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 200
+
+    notes = response.json()
+
+    assert len(notes) == 2
+    assert notes[0]["content"] == (
+        "Segunda observación"
+    )
+
+def test_professional_cannot_access_another_professionals_notes(
+    client,
+    professional_headers,
+    professional_factory,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Privado",
+        },
+    )
+
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        },
+    )
+
+    session_id = session_response.json()["id"]
+
+    note_response = client.post(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+        json={
+            "content": "Nota privada",
+        },
+    )
+
+    assert note_response.status_code == 201
+
+    other_professional_headers = professional_factory()
+
+    response = client.get(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=other_professional_headers,
+    )
+
+    assert response.status_code == 404

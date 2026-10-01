@@ -22,6 +22,8 @@ from app.clinical_sessions.service import (
     update_clinical_session,
 )
 
+from app.clinical_sessions.note_schemas import ClinicalSessionNoteCreate, ClinicalSessionNoteRead
+from app.clinical_sessions.note_service import create_session_note, get_session_for_professional, get_session_notes
 
 router = APIRouter(
     prefix="/clinical-sessions",
@@ -151,4 +153,61 @@ def delete_session(
     delete_clinical_session(
         db,
         clinical_session,
+    )
+    
+@router.post(
+    "/{session_id}/notes",
+    response_model=ClinicalSessionNoteRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_note(
+    session_id: UUID,
+    data: ClinicalSessionNoteCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clinical_session = get_session_for_professional(
+        db,
+        session_id,
+        current_user.id,
+    )
+
+    if clinical_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Sesión no encontrada.",
+        )
+
+    return create_session_note(
+        db,
+        clinical_session,
+        data,
+        current_user,
+    )
+
+
+@router.get(
+    "/{session_id}/notes",
+    response_model=list[ClinicalSessionNoteRead],
+)
+def list_notes(
+    session_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clinical_session = get_session_for_professional(
+        db,
+        session_id,
+        current_user.id,
+    )
+
+    if clinical_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Sesión no encontrada.",
+        )
+
+    return get_session_notes(
+        db,
+        session_id,
     )
