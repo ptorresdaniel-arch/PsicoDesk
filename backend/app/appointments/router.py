@@ -190,12 +190,17 @@ def update(
             status_code=404,
             detail="Cita no encontrada.",
         )
-
-    return update_appointment(
-        db,
-        appointment,
-        data,
-    )
+    try:
+        return update_appointment(
+            db,
+            appointment,
+            data,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        )
 
 
 @router.delete(

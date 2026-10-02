@@ -335,7 +335,7 @@ def test_update_appointment_status_allowed(
     assert response.status_code == 200
     assert response.json()["status"] == "confirmed"
     
-def test_update_appointment_status_allowed(
+def test_update_appointment_status_invalid_transition(
     client,
     professional_headers,
 ):
@@ -344,13 +344,15 @@ def test_update_appointment_status_allowed(
         headers=professional_headers,
         json={
             "first_name": "Paciente",
-            "last_name": "Estado",
+            "last_name": "EstadoInvalido",
         },
     )
 
+    assert patient_response.status_code == 201
+
     patient_id = patient_response.json()["id"]
 
-    start = datetime.now(timezone.utc) + timedelta(days=3)
+    start = datetime.now(timezone.utc) + timedelta(days=4)
     end = start + timedelta(minutes=50)
 
     appointment_response = client.post(
@@ -363,9 +365,12 @@ def test_update_appointment_status_allowed(
         },
     )
 
+    assert appointment_response.status_code == 201
+
     appointment_id = appointment_response.json()["id"]
 
-    response = client.patch(
+    # scheduled -> confirmed: válido
+    confirm_response = client.patch(
         f"/appointments/{appointment_id}",
         headers=professional_headers,
         json={
@@ -373,9 +378,19 @@ def test_update_appointment_status_allowed(
         },
     )
 
-    assert response.status_code == 200
-    assert response.json()["status"] == "confirmed"
-    
+    assert confirm_response.status_code == 200
+
+    # confirmed -> scheduled: inválido
+    invalid_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "scheduled",
+        },
+    )
+
+    assert invalid_response.status_code == 400
+     
 def test_create_clinical_session_from_completed_appointment(
     client,
     professional_headers,
@@ -817,3 +832,120 @@ def test_appointment_summary_with_statuses(
     )
 
     assert summary_response.json()["confirmed"] == 1
+    
+def test_cannot_update_appointment_with_invalid_time_range(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "HorarioInvalido",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=8)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "start_time": end.isoformat(),
+            "end_time": start.isoformat(),
+        },
+    )
+
+    assert response.status_code == 400
+    
+def test_cannot_update_appointment_into_existing_conflict(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "ConflictoUpdate",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    base = datetime.now(timezone.utc) + timedelta(days=9)
+
+    first_start = base.replace(
+        hour=10,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    first_end = first_start + timedelta(minutes=50)
+
+    second_start = base.replace(
+        hour=12,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    second_end = second_start + timedelta(minutes=50)
+
+    first_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": first_start.isoformat(),
+            "end_time": first_end.isoformat(),
+        },
+    )
+
+    assert first_response.status_code == 201
+
+    second_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": second_start.isoformat(),
+            "end_time": second_end.isoformat(),
+        },
+    )
+
+    assert second_response.status_code == 201
+
+    second_id = second_response.json()["id"]
+
+    response = client.patch(
+        f"/appointments/{second_id}",
+        headers=professional_headers,
+        json={
+            "start_time": first_start.isoformat(),
+            "end_time": first_end.isoformat(),
+        },
+    )
+
+    assert response.status_code == 400

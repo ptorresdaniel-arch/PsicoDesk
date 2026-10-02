@@ -36,6 +36,7 @@ def has_schedule_conflict(
     professional_id: UUID,
     start_time,
     end_time,
+    exclude_appointment_id: UUID | None = None,
 ) -> bool:
 
     statement = select(Appointment).where(
@@ -43,6 +44,11 @@ def has_schedule_conflict(
         Appointment.start_time < end_time,
         Appointment.end_time > start_time,
     )
+
+    if exclude_appointment_id is not None:
+        statement = statement.where(
+            Appointment.id != exclude_appointment_id,
+        )
 
     return db.scalar(statement) is not None
 
@@ -136,12 +142,44 @@ def update_appointment(
     update_data = data.model_dump(
         exclude_unset=True,
     )
+
+    new_start_time = update_data.get(
+        "start_time",
+        appointment.start_time,
+    )
+
+    new_end_time = update_data.get(
+        "end_time",
+        appointment.end_time,
+    )
+
+    if new_end_time <= new_start_time:
+        raise ValueError(
+            "La hora de término debe ser posterior a la hora de inicio."
+        )
+
+    if (
+        "start_time" in update_data
+        or "end_time" in update_data
+    ):
+        if has_schedule_conflict(
+            db,
+            appointment.professional_id,
+            new_start_time,
+            new_end_time,
+            exclude_appointment_id=appointment.id,
+        ):
+            raise ValueError(
+                "Existe una cita que se cruza con ese horario."
+            )
+
     if "status" in update_data:
         current_status = AppointmentStatus(
             appointment.status
         )
+
         new_status = update_data["status"]
-        
+
         if not can_change_status(
             current_status,
             new_status,
@@ -149,7 +187,7 @@ def update_appointment(
             raise ValueError(
                 "Cambio de estado no permitido."
             )
-            
+
     for field, value in update_data.items():
         setattr(
             appointment,
