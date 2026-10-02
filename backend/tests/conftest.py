@@ -141,6 +141,14 @@ def professional_factory(
             "patients.create",
             "patients.update",
             "patients.delete",
+
+            "clinical_sessions.read",
+            "clinical_sessions.create",
+            "clinical_sessions.update",
+            "clinical_sessions.delete",
+
+            "clinical_notes.read",
+            "clinical_notes.create",
         ]
 
         for code in permission_codes:

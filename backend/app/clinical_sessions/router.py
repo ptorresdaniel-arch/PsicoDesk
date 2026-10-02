@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import require_permission
 from app.users.models import User
 
 from app.clinical_sessions.schemas import (
@@ -39,7 +39,7 @@ router = APIRouter(
 def create_session(
     data: ClinicalSessionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("clinical_sessions.create")),
 ):
     clinical_session = create_clinical_session(
         db,
@@ -65,7 +65,7 @@ def list_patient_sessions(
     page: int = 1,
     limit: int = 20,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("clinical_sessions.read")),
 ):
     return get_sessions_by_patient(
         db,
@@ -83,7 +83,7 @@ def list_patient_sessions(
 def get_session(
     session_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("clinical_sessions.read")),
 ):
     clinical_session = get_session_by_id(
         db,
@@ -108,7 +108,7 @@ def update_session(
     session_id: UUID,
     data: ClinicalSessionUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("clinical_sessions.update")),
 ):
     clinical_session = get_session_by_id(
         db,
@@ -136,7 +136,7 @@ def update_session(
 def delete_session(
     session_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("clinical_sessions.delete")),
 ):
     clinical_session = get_session_by_id(
         db,
@@ -164,7 +164,7 @@ def create_note(
     session_id: UUID,
     data: ClinicalSessionNoteCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("clinical_notes.create")),
 ):
     clinical_session = get_session_for_professional(
         db,
@@ -193,7 +193,7 @@ def create_note(
 def list_notes(
     session_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("clinical_notes.read")),
 ):
     clinical_session = get_session_for_professional(
         db,

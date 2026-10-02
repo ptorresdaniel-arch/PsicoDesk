@@ -7,7 +7,12 @@ from app.auth.service import (
     get_role_by_name,
 )
 from app.core.database import SessionLocal
+
 from app.patients import models as patient_models
+from app.appointments import models as appointments_models
+from app.clinical_sessions import models as clinical_session_models
+from app.clinical_sessions import note_models as clinical_note_models
+
 from app.users.service import get_user_by_email
 
 
@@ -20,6 +25,12 @@ INITIAL_PERMISSIONS = [
     "patients.create",
     "patients.update",
     "patients.delete",
+    "clinical_sessions.read",
+    "clinical_sessions.create",
+    "clinical_sessions.update",
+    "clinical_sessions.delete",
+    "clinical_notes.read",
+    "clinical_notes.create",
 ]
 
 ADMIN_ROLE = "admin"
@@ -30,6 +41,12 @@ PROFESSIONAL_PERMISSIONS = [
     "patients.create",
     "patients.update",
     "patients.delete",
+    "clinical_sessions.read",
+    "clinical_sessions.create",
+    "clinical_sessions.update",
+    "clinical_sessions.delete",
+    "clinical_notes.read",
+    "clinical_notes.create",
 ]
 
 
