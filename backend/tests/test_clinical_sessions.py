@@ -370,3 +370,64 @@ def test_professional_cannot_access_another_professionals_notes(
     )
 
     assert response.status_code == 404
+    
+def test_clinical_session_note_is_immutable(
+    client: TestClient,
+    professional_headers,
+) -> None:
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Inmutable",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        },
+    )
+
+    assert session_response.status_code == 201
+
+    session_id = session_response.json()["id"]
+
+    note_response = client.post(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+        json={
+            "content": "Nota original.",
+        },
+    )
+
+    assert note_response.status_code == 201
+
+    note_id = note_response.json()["id"]
+
+    update_response = client.patch(
+        f"/clinical-sessions/{session_id}/notes/{note_id}",
+        headers=professional_headers,
+        json={
+            "content": "Nota modificada.",
+        },
+    )
+
+    assert update_response.status_code == 404
+
+    delete_response = client.delete(
+        f"/clinical-sessions/{session_id}/notes/{note_id}",
+        headers=professional_headers,
+    )
+
+    assert delete_response.status_code == 404

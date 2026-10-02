@@ -32,9 +32,9 @@ class ClinicalSessionNote(Base):
     created_by: Mapped[UUID] = mapped_column(
         ForeignKey(
             "users.id",
-            ondelete="CASCADE",
+            ondelete="RESTRICT",
         ),
-        nullable=False,
+        nullable=False, 
     )
 
     created_at: Mapped[datetime] = mapped_column(
