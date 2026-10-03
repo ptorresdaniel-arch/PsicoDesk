@@ -1,6 +1,6 @@
+from datetime import datetime
 from uuid import UUID
 
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -45,8 +45,10 @@ router = APIRouter(
 def create(
     data: AppointmentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.create")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.create")
+        ),
+)-> AppointmentRead:
 
     try:
         appointment = create_appointment(
@@ -57,13 +59,13 @@ def create(
 
     except ValueError as error:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         )
 
     if appointment is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Paciente no encontrado.",
         )
 
@@ -76,8 +78,10 @@ def create(
 )
 def list_my_appointments(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.read")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.read")
+        ),
+)-> list[AppointmentRead]:
 
     return get_professional_appointments(
         db,
@@ -92,8 +96,10 @@ def calendar(
     start_date: datetime,
     end_date: datetime,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.read")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.read")
+        ),
+)-> list[AppointmentCalendarRead]:
 
     return get_calendar_appointments(
         db,
@@ -110,8 +116,10 @@ def availability(
     start_time: datetime,
     end_time: datetime,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.read")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.read")
+        ),
+)-> AppointmentAvailabilityRead:
     try:
         available = check_appointment_availability(
             db,
@@ -122,7 +130,7 @@ def availability(
 
     except ValueError as error:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         )
 
@@ -136,8 +144,10 @@ def availability(
 )
 def summary(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.read")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.read")
+        ),
+)-> AppointmentSummaryRead:
     return get_appointment_summary(
         db,
         current_user.id,
@@ -150,8 +160,10 @@ def summary(
 def get_one(
     appointment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.read")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.read")
+        ),
+)-> AppointmentRead:
 
     appointment = get_appointment_by_id(
         db,
@@ -161,7 +173,7 @@ def get_one(
 
     if appointment is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Cita no encontrada.",
         )
 
@@ -176,8 +188,10 @@ def update(
     appointment_id: UUID,
     data: AppointmentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.update")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.update")
+        ),
+)-> AppointmentRead:
 
     appointment = get_appointment_by_id(
         db,
@@ -210,8 +224,10 @@ def update(
 def delete(
     appointment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.delete")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.delete")
+        ),
+)-> None:
 
     appointment = get_appointment_by_id(
         db,
@@ -221,7 +237,7 @@ def delete(
 
     if appointment is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Cita no encontrada.",
         )
 
@@ -233,13 +249,15 @@ def delete(
 @router.post(
     "/{appointment_id}/clinical-session",
     response_model=ClinicalSessionRead,
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
 )
 def create_session_from_appointment(
     appointment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("appointments.update")),
-):
+    current_user: User = Depends(
+        require_permission("appointments.update")
+        ),
+)-> ClinicalSessionRead:
 
     appointment = get_appointment_by_id(
         db,
@@ -249,8 +267,8 @@ def create_session_from_appointment(
 
     if appointment is None:
         raise HTTPException(
-            status_code=404,
-            detail="Cita no encontrada",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cita no encontrada.",
         )
 
     try:
@@ -261,6 +279,6 @@ def create_session_from_appointment(
 
     except ValueError as error:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         )

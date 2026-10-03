@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException,Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -22,8 +22,15 @@ from app.clinical_sessions.service import (
     update_clinical_session,
 )
 
-from app.clinical_sessions.note_schemas import ClinicalSessionNoteCreate, ClinicalSessionNoteRead
-from app.clinical_sessions.note_service import create_session_note, get_session_for_professional, get_session_notes
+from app.clinical_sessions.note_schemas import(
+    ClinicalSessionNoteCreate,
+    ClinicalSessionNoteRead,
+    )
+from app.clinical_sessions.note_service import(
+    create_session_note,
+    get_session_for_professional,
+    get_session_notes,
+    )
 
 router = APIRouter(
     prefix="/clinical-sessions",
@@ -39,8 +46,10 @@ router = APIRouter(
 def create_session(
     data: ClinicalSessionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("clinical_sessions.create")),
-):
+    current_user: User = Depends(
+        require_permission("clinical_sessions.create")
+        ),
+)-> ClinicalSessionRead:
     clinical_session = create_clinical_session(
         db,
         data,
@@ -49,7 +58,7 @@ def create_session(
 
     if clinical_session is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Paciente no encontrado.",
         )
 
@@ -75,7 +84,7 @@ def list_patient_sessions(
     current_user: User = Depends(
         require_permission("clinical_sessions.read")
     ),
-):
+)-> ClinicalSessionListRead:
     return get_sessions_by_patient(
         db,
         patient_id,
@@ -92,8 +101,10 @@ def list_patient_sessions(
 def get_session(
     session_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("clinical_sessions.read")),
-):
+    current_user: User = Depends(
+        require_permission("clinical_sessions.read")
+        ),
+)-> ClinicalSessionRead:
     clinical_session = get_session_by_id(
         db,
         session_id,
@@ -102,7 +113,7 @@ def get_session(
 
     if clinical_session is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Sesión no encontrada.",
         )
 
@@ -117,8 +128,10 @@ def update_session(
     session_id: UUID,
     data: ClinicalSessionUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("clinical_sessions.update")),
-):
+    current_user: User = Depends(
+        require_permission("clinical_sessions.update")
+        ),
+)-> ClinicalSessionRead:
     clinical_session = get_session_by_id(
         db,
         session_id,
@@ -127,7 +140,7 @@ def update_session(
 
     if clinical_session is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Sesión no encontrada.",
         )
 
@@ -145,7 +158,9 @@ def update_session(
 def delete_session(
     session_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("clinical_sessions.delete")),
+    current_user: User = Depends(
+        require_permission("clinical_sessions.delete")
+        ),
 ):
     clinical_session = get_session_by_id(
         db,
@@ -155,7 +170,7 @@ def delete_session(
 
     if clinical_session is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Sesión no encontrada.",
         )
 
@@ -173,8 +188,10 @@ def create_note(
     session_id: UUID,
     data: ClinicalSessionNoteCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("clinical_notes.create")),
-):
+    current_user: User = Depends(
+        require_permission("clinical_notes.create")
+        ),
+)-> ClinicalSessionNoteRead:
     clinical_session = get_session_for_professional(
         db,
         session_id,
@@ -183,7 +200,7 @@ def create_note(
 
     if clinical_session is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Sesión no encontrada.",
         )
 
@@ -202,8 +219,10 @@ def create_note(
 def list_notes(
     session_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("clinical_notes.read")),
-):
+    current_user: User = Depends(
+        require_permission("clinical_notes.read")
+        ),
+)-> list[ClinicalSessionNoteRead]:
     clinical_session = get_session_for_professional(
         db,
         session_id,
@@ -212,7 +231,7 @@ def list_notes(
 
     if clinical_session is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Sesión no encontrada.",
         )
 
