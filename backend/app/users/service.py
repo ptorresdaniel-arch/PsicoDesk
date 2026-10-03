@@ -1,5 +1,5 @@
-from uuid import UUID
 from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -90,3 +90,16 @@ def change_password(
     db.refresh(user)
 
     return True
+
+def update_user_status(
+    db: Session,
+    user: User,
+    is_active: bool,
+) -> User:
+
+    user.is_active = is_active
+
+    db.commit()
+    db.refresh(user)
+
+    return user

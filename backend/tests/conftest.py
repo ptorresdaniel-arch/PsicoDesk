@@ -222,7 +222,9 @@ def admin_headers(
     assert register_response.status_code == 201
 
     user = db.scalar(
-        select(User).where(User.email == email)
+        select(User).where(
+            User.email == email
+        )
     )
 
     assert user is not None
@@ -234,20 +236,29 @@ def admin_headers(
     db.add(role)
     db.flush()
 
-    permission = db.scalar(
-        select(Permission).where(
-            Permission.code == "users.read"
-        )
-    )
+    admin_permissions = [
+        "users.read",
+        "users.create",
+        "users.update",
+        "users.delete",
+    ]
 
-    if permission is None:
-        permission = Permission(
-            code="users.read",
+    for code in admin_permissions:
+        permission = db.scalar(
+            select(Permission).where(
+                Permission.code == code
+            )
         )
-        db.add(permission)
-        db.flush()
 
-    role.permissions.append(permission)
+        if permission is None:
+            permission = Permission(
+                code=code,
+            )
+            db.add(permission)
+            db.flush()
+
+        role.permissions.append(permission)
+
     user.roles.append(role)
 
     db.commit()

@@ -75,3 +75,6 @@ class UserPasswordUpdate(BaseModel):
         min_length=8,
         max_length=128,
     )
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool

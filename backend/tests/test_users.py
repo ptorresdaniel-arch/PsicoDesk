@@ -184,3 +184,46 @@ def test_login_with_new_password(
     )
 
     assert response.status_code == 200
+    
+def test_admin_can_disable_user(
+    client,
+    admin_headers,
+):
+    user_response = client.post(
+        "/users",
+        json={
+            "email": "disable@example.com",
+            "password": "password-test-123",
+            "first_name": "Disable",
+            "last_name": "User",
+        },
+    )
+
+    assert user_response.status_code == 201
+
+    user_id = user_response.json()["id"]
+
+    response = client.patch(
+        f"/users/{user_id}/status",
+        headers=admin_headers,
+        json={
+            "is_active": False,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_active"] is False
+
+def test_user_cannot_update_user_status(
+    client,
+    auth_headers,
+):
+    response = client.patch(
+        "/users/00000000-0000-0000-0000-000000000000/status",
+        headers=auth_headers,
+        json={
+            "is_active": False,
+        },
+    )
+
+    assert response.status_code == 403

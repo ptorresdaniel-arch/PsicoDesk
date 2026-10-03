@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,12 +11,15 @@ from app.users.schemas import(
     UserRead,
     UserUpdate,
     UserPasswordUpdate,
+    UserStatusUpdate,
     )
 from app.users.service import(
     create_user,
     get_user_by_email,
+    get_user_by_id,
     update_user,
     change_password,
+    update_user_status,
     )
 
 from app.auth.dependencies import(
@@ -65,6 +69,36 @@ def list_users(
                             ],
 ) -> list[User]:
     return list(db.scalars(select(User)).all())
+
+@router.patch(
+    "/{user_id}/status",
+    response_model=UserRead,
+)
+def update_user_status_view(
+    user_id: UUID,
+    data: UserStatusUpdate,
+    db: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("users.update")),
+    ],
+) -> User:
+    user = get_user_by_id(
+        db,
+        user_id,
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado.",
+        )
+
+    return update_user_status(
+        db,
+        user,
+        data.is_active,
+    )
 
 @router.get(
     "/me",
@@ -123,3 +157,4 @@ def update_my_profile(
         current_user,
         user_data,
     )
+    
