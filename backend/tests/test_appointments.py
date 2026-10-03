@@ -949,3 +949,68 @@ def test_cannot_update_appointment_into_existing_conflict(
     )
 
     assert response.status_code == 400
+
+def test_professional_cannot_create_clinical_session_from_another_professional_appointment(
+    client,
+    professional_factory,
+):
+    professional_a = professional_factory()
+    professional_b = professional_factory()
+
+    patient_response = client.post(
+        "/patients",
+        headers=professional_a,
+        json={
+            "first_name": "Paciente",
+            "last_name": "CitaPrivada",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=10)
+    end = start + timedelta(minutes=60)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_a,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    # La cita debe estar completada antes de crear la sesión.
+    confirm_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_a,
+        json={
+            "status": "confirmed",
+        },
+    )
+
+    assert confirm_response.status_code == 200
+
+    complete_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_a,
+        json={
+            "status": "completed",
+        },
+    )
+
+    assert complete_response.status_code == 200
+
+    response = client.post(
+        f"/appointments/{appointment_id}/clinical-session",
+        headers=professional_b,
+    )
+
+    assert response.status_code == 404
