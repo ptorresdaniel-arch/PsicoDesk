@@ -193,3 +193,72 @@ def professional_headers(
     professional_factory,
 ) -> dict[str, str]:
     return professional_factory()
+
+@pytest.fixture
+def admin_headers(
+    client: TestClient,
+    db: Session,
+) -> dict[str, str]:
+    unique_id = uuid4().hex
+
+    email = f"admin-{unique_id}@example.com"
+    password = "password-test-123"
+
+    register_response = client.post(
+        "/users",
+        json={
+            "email": email,
+            "password": password,
+            "first_name": "Admin",
+            "last_name": "Test",
+        },
+    )
+
+    assert register_response.status_code == 201
+
+    user = db.scalar(
+        select(User).where(User.email == email)
+    )
+
+    assert user is not None
+
+    role = Role(
+        name=f"admin-test-{unique_id}",
+    )
+
+    db.add(role)
+    db.flush()
+
+    permission = db.scalar(
+        select(Permission).where(
+            Permission.code == "users.read"
+        )
+    )
+
+    if permission is None:
+        permission = Permission(
+            code="users.read",
+        )
+        db.add(permission)
+        db.flush()
+
+    role.permissions.append(permission)
+    user.roles.append(role)
+
+    db.commit()
+
+    login_response = client.post(
+        "/auth/login",
+        json={
+            "email": email,
+            "password": password,
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+
+    return {
+        "Authorization": f"Bearer {token}"
+    }

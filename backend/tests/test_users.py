@@ -40,3 +40,56 @@ def test_register_user(
     assert user is not None
     assert user.email == "pytest@example.com"
     assert user.password_hash != "password-test-123"
+    
+def test_register_user_with_existing_email(
+    client: TestClient,
+) -> None:
+    payload = {
+        "email": "duplicate@example.com",
+        "password": "password-test-123",
+        "first_name": "Usuario",
+        "last_name": "Duplicado",
+    }
+
+    first_response = client.post(
+        "/users",
+        json=payload,
+    )
+
+    assert first_response.status_code == 201
+
+    second_response = client.post(
+        "/users",
+        json=payload,
+    )
+
+    assert second_response.status_code == 409
+    assert second_response.json()["detail"] == (
+        "Ya existe un usuario con ese email."
+    )
+
+def test_list_users_without_permission(
+    client: TestClient,
+    professional_headers,
+) -> None:
+    response = client.get(
+        "/users/",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 403
+
+def test_list_users_with_permission(
+    client: TestClient,
+    admin_headers,
+) -> None:
+    response = client.get(
+        "/users/",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert isinstance(data, list)
