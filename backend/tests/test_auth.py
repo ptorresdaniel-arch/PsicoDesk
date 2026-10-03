@@ -1,7 +1,9 @@
+from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.users.models import User
+from app.core.security import create_access_token
 
 def test_login_success(
     client: TestClient,
@@ -192,3 +194,35 @@ def test_login_updates_last_login(
     db.refresh(user)
 
     assert user.last_login_at is not None
+
+def test_get_current_user_with_invalid_token(
+    client: TestClient,
+) -> None:
+    response = client.get(
+        "/auth/me",
+        headers={
+            "Authorization": "Bearer token-invalido",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": "No se pudo validar la autenticación.",
+    }
+
+def test_get_current_user_with_nonexistent_user(
+    client: TestClient,
+) -> None:
+    token = create_access_token(uuid4())
+
+    response = client.get(
+        "/auth/me",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": "No se pudo validar la autenticación.",
+    }
