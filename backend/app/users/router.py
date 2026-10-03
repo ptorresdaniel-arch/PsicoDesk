@@ -9,10 +9,13 @@ from app.users.schemas import(
     UserCreate,
     UserRead,
     UserUpdate,
+    UserPasswordUpdate,
     )
 from app.users.service import(
     create_user,
     get_user_by_email,
+    update_user,
+    change_password,
     )
 
 from app.auth.dependencies import(
@@ -56,7 +59,10 @@ def register_user(
 )
 def list_users(
     db: DbSession,
-    current_user: Annotated[User, Depends(require_permission("users.read")),],
+    current_user: Annotated[User, Depends(
+        require_permission("users.read")
+        ),
+                            ],
 ) -> list[User]:
     return list(db.scalars(select(User)).all())
 
@@ -71,6 +77,34 @@ def get_my_profile(
     ],
 ) -> User:
     return current_user
+
+@router.post(
+    "/me/password",
+)
+def update_password(
+    password_data: UserPasswordUpdate,
+    db: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(get_current_user),
+    ],
+) -> dict[str, str]:
+
+    updated = change_password(
+        db,
+        current_user,
+        password_data,
+    )
+
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="La contraseña actual es incorrecta.",
+        )
+
+    return {
+        "message": "Contraseña actualizada correctamente.",
+    }
 
 @router.patch(
     "/me",

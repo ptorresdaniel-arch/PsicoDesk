@@ -4,11 +4,15 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
+from app.core.security import(
+    hash_password,
+    verify_password,
+    )
 from app.users.models import User
 from app.users.schemas import(
     UserCreate,
     UserUpdate,
+    UserPasswordUpdate,
     )
 
 def get_user_by_email(db: Session, email: str) -> User | None:
@@ -65,3 +69,24 @@ def update_user(
     db.refresh(user)
 
     return user
+
+def change_password(
+    db: Session,
+    user: User,
+    password_data: UserPasswordUpdate,
+) -> bool:
+
+    if not verify_password(
+        password_data.current_password,
+        user.password_hash,
+    ):
+        return False
+
+    user.password_hash = hash_password(
+        password_data.new_password,
+    )
+
+    db.commit()
+    db.refresh(user)
+
+    return True

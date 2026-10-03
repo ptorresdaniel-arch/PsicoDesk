@@ -131,3 +131,56 @@ def test_update_my_profile(
 
     assert data["first_name"] == "Updated"
     assert data["phone"] == "123456789"
+
+def test_change_password_success(
+    client,
+    auth_headers,
+):
+    response = client.post(
+        "/users/me/password",
+        headers=auth_headers,
+        json={
+            "current_password": "password-test-123",
+            "new_password": "new-password-123",
+        },
+    )
+
+    assert response.status_code == 200
+
+def test_change_password_wrong_current_password(
+    client,
+    auth_headers,
+):
+    response = client.post(
+        "/users/me/password",
+        headers=auth_headers,
+        json={
+            "current_password": "wrong-password",
+            "new_password": "new-password-123",
+        },
+    )
+
+    assert response.status_code == 401
+
+def test_login_with_new_password(
+    client,
+    auth_headers,
+):
+    client.post(
+        "/users/me/password",
+        headers=auth_headers,
+        json={
+            "current_password": "password-test-123",
+            "new_password": "new-password-123",
+        },
+    )
+
+    response = client.post(
+        "/auth/login",
+        json={
+            "email": "authenticated@example.com",
+            "password": "new-password-123",
+        },
+    )
+
+    assert response.status_code == 200
