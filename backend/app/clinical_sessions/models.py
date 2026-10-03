@@ -7,6 +7,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +18,13 @@ from app.appointments.models import Appointment
 
 class ClinicalSession(Base):
     __tablename__ = "clinical_sessions"
+    
+    __table_args__ = (
+        UniqueConstraint(
+            "appointment_id",
+            name="uq_clinical_sessions_appointment_id",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(
         primary_key=True,
@@ -38,8 +46,6 @@ class ClinicalSession(Base):
             ondelete="SET NULL",
         ),
         nullable=True,
-        unique=True,
-        index=True,
     )
 
     session_date: Mapped[datetime] = mapped_column(
