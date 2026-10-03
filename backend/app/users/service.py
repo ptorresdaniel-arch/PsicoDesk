@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.users.models import User
-from app.users.schemas import UserCreate
+from app.users.schemas import(
+    UserCreate,
+    UserUpdate,
+    )
 
 def get_user_by_email(db: Session, email: str) -> User | None:
     statement = select(User).where(User.email == email)
@@ -39,4 +42,26 @@ def update_last_login(db: Session, user: User) -> User:
     db.commit()
     db.refresh(user)
     
+    return user
+
+def update_user(
+    db: Session,
+    user: User,
+    user_data: UserUpdate,
+) -> User:
+
+    update_data = user_data.model_dump(
+        exclude_unset=True,
+    )
+
+    for field, value in update_data.items():
+        setattr(
+            user,
+            field,
+            value,
+        )
+
+    db.commit()
+    db.refresh(user)
+
     return user

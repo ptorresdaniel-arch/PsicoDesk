@@ -39,4 +39,31 @@ class UserRead(BaseModel):
     last_login_at: datetime | None
     created_at: datetime
     updated_at: datetime
-    
+
+class UserUpdate(BaseModel):
+    first_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+
+    last_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+
+    phone: str | None = Field(
+        default=None,
+        max_length=30,
+    )
+
+    professional_license: str | None = Field(
+        default=None,
+        max_length=50,
+    )
+
+    specialty: str | None = Field(
+        default=None,
+        max_length=100,
+    )

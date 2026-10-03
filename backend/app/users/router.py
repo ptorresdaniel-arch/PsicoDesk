@@ -5,11 +5,22 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.users.schemas import UserCreate, UserRead
-from app.users.service import create_user, get_user_by_email
+from app.users.schemas import(
+    UserCreate,
+    UserRead,
+    UserUpdate,
+    )
+from app.users.service import(
+    create_user,
+    get_user_by_email,
+    )
 
-from app.auth.dependencies import require_permission
+from app.auth.dependencies import(
+    require_permission,
+    get_current_user,
+    )
 from app.users.models import User
+from app.users.service import update_user
 
 
 router = APIRouter(
@@ -48,3 +59,33 @@ def list_users(
     current_user: Annotated[User, Depends(require_permission("users.read")),],
 ) -> list[User]:
     return list(db.scalars(select(User)).all())
+
+@router.get(
+    "/me",
+    response_model=UserRead,
+)
+def get_my_profile(
+    current_user: Annotated[
+        User,
+        Depends(get_current_user),
+    ],
+) -> User:
+    return current_user
+
+@router.patch(
+    "/me",
+    response_model=UserRead,
+)
+def update_my_profile(
+    user_data: UserUpdate,
+    db: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(get_current_user),
+    ],
+) -> User:
+    return update_user(
+        db,
+        current_user,
+        user_data,
+    )

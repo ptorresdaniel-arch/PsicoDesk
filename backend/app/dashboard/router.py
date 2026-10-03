@@ -30,9 +30,11 @@ def dashboard(
     db: DbSession,
     current_user: Annotated[
         User,
-        Depends(require_permission("patients.read")),
+        Depends(
+            require_permission("patients.read")
+            ),
     ],
-):
+)-> DashboardRead:
     return get_dashboard(
         db,
         current_user.id,

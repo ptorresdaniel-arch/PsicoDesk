@@ -93,3 +93,41 @@ def test_list_users_with_permission(
     data = response.json()
 
     assert isinstance(data, list)
+
+def test_get_my_profile(
+    client,
+    auth_headers,
+):
+    response = client.get(
+        "/users/me",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["email"] == "authenticated@example.com"
+    assert data["first_name"] == "Authenticated"
+
+    assert "password_hash" not in data
+
+def test_update_my_profile(
+    client,
+    auth_headers,
+):
+    response = client.patch(
+        "/users/me",
+        headers=auth_headers,
+        json={
+            "first_name": "Updated",
+            "phone": "123456789",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["first_name"] == "Updated"
+    assert data["phone"] == "123456789"
