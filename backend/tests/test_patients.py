@@ -131,6 +131,127 @@ def test_patient_crud(
 
     assert get_deleted_response.status_code == 404
     
+def test_delete_patient_with_clinical_history(
+    client,
+    professional_headers,
+    db,
+):
+    # Crear paciente
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Historial",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    # Crear cita
+    start = datetime.now(timezone.utc) + timedelta(days=1)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    # Completar la cita
+    response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "confirmed"},
+    )
+
+    assert response.status_code == 200
+
+    response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "completed"},
+    )
+
+    assert response.status_code == 200
+
+    # Crear sesión clínica
+    session_response = client.post(
+        f"/appointments/{appointment_id}/clinical-session",
+        headers=professional_headers,
+    )
+
+    assert session_response.status_code == 201
+
+    session_id = session_response.json()["id"]
+
+    # Crear nota clínica
+    note_response = client.post(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+        json={
+            "content": "Nota clínica de prueba.",
+        },
+    )
+
+    assert note_response.status_code == 201
+
+    note_id = note_response.json()["id"]
+
+    # Eliminar paciente
+    delete_response = client.delete(
+        f"/patients/{patient_id}",
+        headers=professional_headers,
+    )
+
+    assert delete_response.status_code == 204
+
+    # El paciente ya no existe
+    patient_check = client.get(
+        f"/patients/{patient_id}",
+        headers=professional_headers,
+    )
+
+    assert patient_check.status_code == 404
+
+    # Verificar directamente que las entidades relacionadas
+    # también fueron eliminadas.
+    from sqlalchemy import select
+
+    from app.appointments.models import Appointment
+    from app.clinical_sessions.models import ClinicalSession
+    from app.clinical_sessions.note_models import ClinicalSessionNote
+
+    db.expire_all()
+
+    assert db.scalar(
+        select(Appointment).where(
+            Appointment.id == appointment_id,
+        )
+    ) is None
+
+    assert db.scalar(
+        select(ClinicalSession).where(
+            ClinicalSession.id == session_id,
+        )
+    ) is None
+
+    assert db.scalar(
+        select(ClinicalSessionNote).where(
+            ClinicalSessionNote.id == note_id,
+        )
+    ) is None
+    
 def test_professional_cannot_access_another_professionals_patient(
     client: TestClient,
     professional_factory,
@@ -490,3 +611,50 @@ def test_patient_profile_summary(
     assert summary["total_sessions"] == 1
     assert summary["last_session_date"] is not None
     assert summary["next_appointment_date"] is not None
+
+def test_patient_search_requires_minimum_length(
+    client,
+    professional_headers,
+):
+    response = client.get(
+        "/patients?search=a",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_patient_list_rejects_invalid_page(
+    client,
+    professional_headers,
+):
+    response = client.get(
+        "/patients?page=0",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_patient_list_rejects_invalid_limit(
+    client,
+    professional_headers,
+):
+    response = client.get(
+        "/patients?limit=0",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_patient_list_rejects_limit_above_maximum(
+    client,
+    professional_headers,
+):
+    response = client.get(
+        "/patients?limit=101",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 422
