@@ -21,14 +21,22 @@ INITIAL_PERMISSIONS = [
     "users.create",
     "users.update",
     "users.delete",
+    
     "patients.read",
     "patients.create",
     "patients.update",
     "patients.delete",
+    
+    "appointments.read",
+    "appointments.create",
+    "appointments.update",
+    "appointments.delete",
+    
     "clinical_sessions.read",
     "clinical_sessions.create",
     "clinical_sessions.update",
     "clinical_sessions.delete",
+    
     "clinical_notes.read",
     "clinical_notes.create",
 ]
@@ -41,10 +49,17 @@ PROFESSIONAL_PERMISSIONS = [
     "patients.create",
     "patients.update",
     "patients.delete",
+    
+    "appointments.read",
+    "appointments.create",
+    "appointments.update",
+    "appointments.delete",
+    
     "clinical_sessions.read",
     "clinical_sessions.create",
     "clinical_sessions.update",
     "clinical_sessions.delete",
+    
     "clinical_notes.read",
     "clinical_notes.create",
 ]

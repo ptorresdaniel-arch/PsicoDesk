@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -62,10 +62,19 @@ def create_session(
 )
 def list_patient_sessions(
     patient_id: UUID,
-    page: int = 1,
-    limit: int = 20,
+    page: int = Query(
+        default=1,
+        ge=1,
+    ),
+    limit: int = Query(
+        default=20,
+        ge=1,
+        le=100,
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("clinical_sessions.read")),
+    current_user: User = Depends(
+        require_permission("clinical_sessions.read")
+    ),
 ):
     return get_sessions_by_patient(
         db,

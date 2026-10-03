@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import require_permission
 from app.core.database import get_db
 from app.users.models import User
 
@@ -45,7 +45,7 @@ router = APIRouter(
 def create(
     data: AppointmentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.create")),
 ):
 
     try:
@@ -76,7 +76,7 @@ def create(
 )
 def list_my_appointments(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.read")),
 ):
 
     return get_professional_appointments(
@@ -92,7 +92,7 @@ def calendar(
     start_date: datetime,
     end_date: datetime,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.read")),
 ):
 
     return get_calendar_appointments(
@@ -110,7 +110,7 @@ def availability(
     start_time: datetime,
     end_time: datetime,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.read")),
 ):
     try:
         available = check_appointment_availability(
@@ -136,7 +136,7 @@ def availability(
 )
 def summary(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.read")),
 ):
     return get_appointment_summary(
         db,
@@ -150,7 +150,7 @@ def summary(
 def get_one(
     appointment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.read")),
 ):
 
     appointment = get_appointment_by_id(
@@ -176,7 +176,7 @@ def update(
     appointment_id: UUID,
     data: AppointmentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.update")),
 ):
 
     appointment = get_appointment_by_id(
@@ -210,7 +210,7 @@ def update(
 def delete(
     appointment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.delete")),
 ):
 
     appointment = get_appointment_by_id(
@@ -238,7 +238,7 @@ def delete(
 def create_session_from_appointment(
     appointment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("appointments.update")),
 ):
 
     appointment = get_appointment_by_id(

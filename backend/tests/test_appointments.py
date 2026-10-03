@@ -1014,3 +1014,19 @@ def test_professional_cannot_create_clinical_session_from_another_professional_a
     )
 
     assert response.status_code == 404
+
+def test_create_appointment_without_permission(
+    client,
+    auth_headers,
+):
+    response = client.post(
+        "/appointments",
+        headers=auth_headers,
+        json={
+            "patient_id": "00000000-0000-0000-0000-000000000000",
+            "start_time": "2026-10-03T10:00:00+00:00",
+            "end_time": "2026-10-03T10:50:00+00:00",
+        },
+    )
+
+    assert response.status_code == 403

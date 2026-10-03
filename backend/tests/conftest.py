@@ -141,6 +141,11 @@ def professional_factory(
             "patients.create",
             "patients.update",
             "patients.delete",
+            
+            "appointments.read",
+            "appointments.create",
+            "appointments.update",
+            "appointments.delete",
 
             "clinical_sessions.read",
             "clinical_sessions.create",
