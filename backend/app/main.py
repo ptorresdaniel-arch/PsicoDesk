@@ -7,6 +7,7 @@ from app.clinical_sessions.router import router as clinical_sessions_router
 from app.appointments.router import router as appointments_router
 from app.dashboard.router import router as dashboard_router
 from app.roles.router import router as roles_router
+from app.permissions.router import router as permissions_router
 
 app = FastAPI(
     title="PsicoDesk API",
@@ -25,6 +26,7 @@ app.include_router(clinical_sessions_router)
 app.include_router(appointments_router)
 app.include_router(dashboard_router)
 app.include_router(roles_router)
+app.include_router(permissions_router)
 
 
 @app.get("/")

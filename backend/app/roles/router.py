@@ -10,21 +10,22 @@ from fastapi import(
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import require_permission
-
+from app.permissions.service import get_permission_by_id
 from app.core.database import get_db
-
+from app.permissions.schemas import PermissionRead
 from app.roles.schemas import(
     RoleCreate,
     RoleRead,
     )
 
 from app.roles.service import(
+    assign_permission_to_role,
+    remove_permission_from_role,
     get_roles,
     create_role,
-    delete_role
+    delete_role,
     )
 from app.auth.service import get_role_by_id
-
 from app.users.models import User
 
 
@@ -102,3 +103,88 @@ def remove_role(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(error),
         )
+        
+@router.post(
+    "/{role_id}/permissions/{permission_id}",
+    response_model=list[PermissionRead],
+    status_code=status.HTTP_200_OK,
+)
+def assign_role_permission(
+    role_id: UUID,
+    permission_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_permission("users.update")
+    ),
+):
+    role = get_role_by_id(
+        db,
+        role_id,
+    )
+
+    if role is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rol no encontrado.",
+        )
+
+    permission = get_permission_by_id(
+        db,
+        permission_id,
+    )
+
+    if permission is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Permiso no encontrado.",
+        )
+
+    assign_permission_to_role(
+        db,
+        role,
+        permission,
+    )
+
+    return role.permissions
+
+@router.delete(
+    "/{role_id}/permissions/{permission_id}",
+    response_model=list[PermissionRead],
+)
+def remove_role_permission(
+    role_id: UUID,
+    permission_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_permission("users.update")
+    ),
+):
+    role = get_role_by_id(
+        db,
+        role_id,
+    )
+
+    if role is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rol no encontrado.",
+        )
+
+    permission = get_permission_by_id(
+        db,
+        permission_id,
+    )
+
+    if permission is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Permiso no encontrado.",
+        )
+
+    remove_permission_from_role(
+        db,
+        role,
+        permission,
+    )
+
+    return role.permissions

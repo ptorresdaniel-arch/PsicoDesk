@@ -1,7 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.models import Role
+from app.auth.models import(
+    Permission,
+    Role,
+)
 
 from app.roles.schemas import RoleCreate
 
@@ -65,3 +68,23 @@ def delete_role(
 
     db.delete(role)
     db.commit()
+
+def assign_permission_to_role(
+    db: Session,
+    role: Role,
+    permission: Permission,
+) -> None:
+
+    if permission not in role.permissions:
+        role.permissions.append(permission)
+        db.commit()
+        
+def remove_permission_from_role(
+    db: Session,
+    role: Role,
+    permission: Permission,
+) -> None:
+
+    if permission in role.permissions:
+        role.permissions.remove(permission)
+        db.commit()

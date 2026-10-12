@@ -1,8 +1,11 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.auth.models import Role
-
+from app.auth.models import(
+    Permission,
+    Role,
+    )
+from app.roles.service import assign_permission_to_role
 
 def test_list_roles_with_permission(
     client: TestClient,
@@ -186,6 +189,291 @@ def test_user_without_permission_cannot_delete_role(
 ):
     response = client.delete(
         "/roles/00000000-0000-0000-0000-000000000000",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403
+    
+def test_assign_permission_to_role(
+    db,
+):
+    role = Role(
+        name="permission-test-role",
+    )
+
+    permission = Permission(
+        code="permission.test",
+    )
+
+    db.add_all([
+        role,
+        permission,
+    ])
+    db.commit()
+    db.refresh(role)
+    db.refresh(permission)
+
+    assign_permission_to_role(
+        db,
+        role,
+        permission,
+    )
+
+    db.refresh(role)
+
+    assert permission in role.permissions
+    
+def test_assign_permission_to_role(
+    db,
+):
+    role = Role(
+        name="permission-test-role",
+    )
+
+    permission = Permission(
+        code="permission.test",
+    )
+
+    db.add_all([
+        role,
+        permission,
+    ])
+    db.commit()
+    db.refresh(role)
+    db.refresh(permission)
+
+    assign_permission_to_role(
+        db,
+        role,
+        permission,
+    )
+
+    db.refresh(role)
+
+    assert permission in role.permissions
+    
+def test_admin_can_assign_permission_to_role(
+    client,
+    admin_headers,
+    db,
+):
+    role = Role(
+        name="role-permission-api",
+    )
+
+    permission = Permission(
+        code="api.test.permission",
+    )
+
+    db.add_all([
+        role,
+        permission,
+    ])
+    db.commit()
+    db.refresh(role)
+    db.refresh(permission)
+
+    response = client.post(
+        f"/roles/{role.id}/permissions/{permission.id}",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+
+    permissions = response.json()
+
+    assert len(permissions) == 1
+    assert permissions[0]["id"] == str(permission.id)
+    assert permissions[0]["code"] == "api.test.permission"
+    
+def test_assign_permission_to_nonexistent_role(
+    client,
+    admin_headers,
+    db,
+):
+    permission = Permission(
+        code="permission.missing.role",
+    )
+
+    db.add(permission)
+    db.commit()
+    db.refresh(permission)
+
+    response = client.post(
+        f"/roles/00000000-0000-0000-0000-000000000000/"
+        f"permissions/{permission.id}",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Rol no encontrado."
+    }
+    
+def test_assign_nonexistent_permission_to_role(
+    client,
+    admin_headers,
+    db,
+):
+    role = Role(
+        name="role-missing-permission",
+    )
+
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+
+    response = client.post(
+        f"/roles/{role.id}/permissions/"
+        "00000000-0000-0000-0000-000000000000",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Permiso no encontrado."
+    }
+    
+def test_user_without_permission_cannot_assign_permission_to_role(
+    client,
+    auth_headers,
+    db,
+):
+    role = Role(
+        name="protected-permission-role",
+    )
+
+    permission = Permission(
+        code="protected.permission",
+    )
+
+    db.add_all([
+        role,
+        permission,
+    ])
+    db.commit()
+    db.refresh(role)
+    db.refresh(permission)
+
+    response = client.post(
+        f"/roles/{role.id}/permissions/{permission.id}",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403
+    
+def test_admin_can_remove_permission_from_role(
+    client,
+    admin_headers,
+    db,
+):
+    role = Role(
+        name="role-remove-permission-api",
+    )
+
+    permission = Permission(
+        code="api.remove.permission",
+    )
+
+    db.add_all([
+        role,
+        permission,
+    ])
+    db.commit()
+    db.refresh(role)
+    db.refresh(permission)
+
+    assign_response = client.post(
+        f"/roles/{role.id}/permissions/{permission.id}",
+        headers=admin_headers,
+    )
+
+    assert assign_response.status_code == 200
+
+    response = client.delete(
+        f"/roles/{role.id}/permissions/{permission.id}",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+
+    permissions = response.json()
+
+    assert permissions == []
+
+def test_remove_permission_from_nonexistent_role(
+    client,
+    admin_headers,
+    db,
+):
+    permission = Permission(
+        code="remove.permission.missing.role",
+    )
+
+    db.add(permission)
+    db.commit()
+    db.refresh(permission)
+
+    response = client.delete(
+        f"/roles/00000000-0000-0000-0000-000000000000/"
+        f"permissions/{permission.id}",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 404
+
+    assert response.json() == {
+        "detail": "Rol no encontrado."
+    }
+    
+def test_remove_nonexistent_permission_from_role(
+    client,
+    admin_headers,
+    db,
+):
+    role = Role(
+        name="role-remove-missing-permission",
+    )
+
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+
+    response = client.delete(
+        f"/roles/{role.id}/permissions/"
+        "00000000-0000-0000-0000-000000000000",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 404
+
+    assert response.json() == {
+        "detail": "Permiso no encontrado."
+    }
+    
+def test_user_without_permission_cannot_remove_permission_from_role(
+    client,
+    auth_headers,
+    db,
+):
+    role = Role(
+        name="protected-remove-permission-role",
+    )
+
+    permission = Permission(
+        code="protected.remove.permission",
+    )
+
+    db.add_all([
+        role,
+        permission,
+    ])
+    db.commit()
+    db.refresh(role)
+    db.refresh(permission)
+
+    response = client.delete(
+        f"/roles/{role.id}/permissions/{permission.id}",
         headers=auth_headers,
     )
 
