@@ -15,6 +15,10 @@ from app.users.schemas import(
     UserPasswordUpdate,
     )
 
+from app.auth.models import Role
+from app.auth.service import assign_role_to_user
+
+
 def get_user_by_email(db: Session, email: str) -> User | None:
     statement = select(User).where(User.email == email)
     return db.scalar(statement)
@@ -103,3 +107,19 @@ def update_user_status(
     db.refresh(user)
 
     return user
+
+def get_user_roles(
+    user: User,
+):
+    return user.roles
+
+def assign_role(
+    db: Session,
+    user: User,
+    role: Role,
+)-> None:
+    assign_role_to_user(
+        db,
+        user,
+        role,
+    )

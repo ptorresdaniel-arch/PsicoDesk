@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -5,10 +7,21 @@ from app.auth.models import Permission, Role
 from app.users.models import User
 
 
-def get_role_by_name(db: Session, name: str) -> Role | None:
+def get_role_by_name(
+    db: Session,
+    name: str
+) -> Role | None:
     statement = select(Role).where(Role.name == name)
     return db.scalar(statement)
 
+def get_role_by_id(
+    db: Session,
+    role_id: UUID,
+)-> Role | None:
+    statement = select(Role).where(
+        Role.id == role_id,
+    )
+    return db.scalar(statement)
 
 def get_permission_by_code(
     db: Session,
@@ -58,4 +71,13 @@ def assign_role_to_user(
 ) -> None:
     if role not in user.roles:
         user.roles.append(role)
+        db.commit()
+        
+def remove_role_from_user(
+    db: Session,
+    user: User,
+    role: Role,
+) -> None:
+    if role in user.roles:
+        user.roles.remove(role)
         db.commit()

@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.users.models import User
 
+from app.auth.models import Role
+
 
 def test_register_user(
     client: TestClient,
@@ -224,6 +226,271 @@ def test_user_cannot_update_user_status(
         json={
             "is_active": False,
         },
+    )
+
+    assert response.status_code == 403
+    
+def test_get_user_roles_with_permission(
+    client,
+    admin_headers,
+    db,
+):
+    response = client.get(
+        "/users/",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+
+    users = response.json()
+
+    user_id = users[0]["id"]
+
+    roles_response = client.get(
+        f"/users/{user_id}/roles",
+        headers=admin_headers,
+    )
+
+    assert roles_response.status_code == 200
+
+    assert isinstance(
+        roles_response.json(),
+        list,
+    )
+
+def test_get_user_roles_without_permission(
+    client,
+    auth_headers,
+):
+    response = client.get(
+        "/users/00000000-0000-0000-0000-000000000000/roles",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403
+
+def test_get_roles_of_nonexistent_user(
+    client,
+    admin_headers,
+):
+    response = client.get(
+        "/users/00000000-0000-0000-0000-000000000000/roles",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 404
+
+def test_admin_can_assign_role(
+    client,
+    admin_headers,
+    db,
+):
+    user_response = client.post(
+        "/users",
+        json={
+            "email": "role-user@example.com",
+            "password": "password-test-123",
+            "first_name": "Role",
+            "last_name": "User",
+        },
+    )
+
+    assert user_response.status_code == 201
+
+    user_id = user_response.json()["id"]
+
+    role = Role(
+        name="professional-test-role",
+    )
+
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+
+    response = client.post(
+        f"/users/{user_id}/roles",
+        headers=admin_headers,
+        json={
+            "role_id": str(role.id),
+        },
+    )
+
+    assert response.status_code == 200
+
+    roles = response.json()
+
+    assert len(roles) == 1
+    assert roles[0]["name"] == "professional-test-role"
+
+def test_assign_role_to_nonexistent_user(
+    client,
+    admin_headers,
+    db,
+):
+    role = Role(
+        name="role-nonexistent-user",
+    )
+
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+
+    response = client.post(
+        "/users/00000000-0000-0000-0000-000000000000/roles",
+        headers=admin_headers,
+        json={
+            "role_id": str(role.id),
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == (
+        "Usuario no encontrado."
+    )
+
+def test_assign_nonexistent_role(
+    client,
+    admin_headers,
+):
+    user_response = client.post(
+        "/users",
+        json={
+            "email": "missing-role@example.com",
+            "password": "password-test-123",
+            "first_name": "Missing",
+            "last_name": "Role",
+        },
+    )
+
+    assert user_response.status_code == 201
+
+    user_id = user_response.json()["id"]
+
+    response = client.post(
+        f"/users/{user_id}/roles",
+        headers=admin_headers,
+        json={
+            "role_id": (
+                "00000000-0000-0000-0000-000000000000"
+            ),
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == (
+        "Rol no encontrado."
+    )
+
+def test_user_without_permission_cannot_assign_role(
+    client,
+    auth_headers,
+    db,
+):
+    role = Role(
+        name="restricted-role",
+    )
+
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+
+    response = client.post(
+        "/users/00000000-0000-0000-0000-000000000000/roles",
+        headers=auth_headers,
+        json={
+            "role_id": str(role.id),
+        },
+    )
+
+    assert response.status_code == 403
+
+def test_admin_can_remove_role(
+    client,
+    admin_headers,
+    db,
+):
+    user_response = client.post(
+        "/users",
+        json={
+            "email": "remove-role@example.com",
+            "password": "password-test-123",
+            "first_name": "Remove",
+            "last_name": "Role",
+        },
+    )
+
+    assert user_response.status_code == 201
+
+    user_id = user_response.json()["id"]
+
+    role = Role(
+        name="role-to-remove",
+    )
+
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+
+    assign_response = client.post(
+        f"/users/{user_id}/roles",
+        headers=admin_headers,
+        json={
+            "role_id": str(role.id),
+        },
+    )
+
+    assert assign_response.status_code == 200
+
+    response = client.delete(
+        f"/users/{user_id}/roles/{role.id}",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+def test_user_without_permission_cannot_remove_role(
+    client,
+    auth_headers,
+):
+    response = client.delete(
+        "/users/00000000-0000-0000-0000-000000000000/"
+        "00000000-0000-0000-0000-000000000000",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403
+
+def test_user_without_permission_cannot_remove_role(
+    client,
+    auth_headers,
+    db,
+):
+    user_response = client.post(
+        "/users",
+        json={
+            "email": "target-remove-role@example.com",
+            "password": "password-test-123",
+            "first_name": "Target",
+            "last_name": "Role",
+        },
+    )
+
+    assert user_response.status_code == 201
+
+    user_id = user_response.json()["id"]
+
+    role = Role(
+        name="protected-role",
+    )
+
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+
+    response = client.delete(
+        f"/users/{user_id}/roles/{role.id}",
+        headers=auth_headers,
     )
 
     assert response.status_code == 403

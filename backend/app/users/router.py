@@ -12,6 +12,8 @@ from app.users.schemas import(
     UserUpdate,
     UserPasswordUpdate,
     UserStatusUpdate,
+    RoleRead,
+    UserRoleAssign,
     )
 from app.users.service import(
     create_user,
@@ -20,12 +22,19 @@ from app.users.service import(
     update_user,
     change_password,
     update_user_status,
+    get_user_roles,
     )
 
 from app.auth.dependencies import(
     require_permission,
     get_current_user,
     )
+from app.auth.service import(
+    get_role_by_id,
+    assign_role_to_user,
+    remove_role_from_user,
+    )
+
 from app.users.models import User
 from app.users.service import update_user
 
@@ -101,6 +110,31 @@ def update_user_status_view(
     )
 
 @router.get(
+    "/{user_id}/roles",
+    response_model=list[RoleRead],
+)
+def get_roles(
+    user_id: UUID,
+    db: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("users.read")),
+    ],
+) -> list:
+    user = get_user_by_id(
+        db,
+        user_id,
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado.",
+        )
+
+    return get_user_roles(user)
+
+@router.get(
     "/me",
     response_model=UserRead,
 )
@@ -158,3 +192,90 @@ def update_my_profile(
         user_data,
     )
     
+@router.post(
+    "/{user_id}/roles",
+    response_model=list[RoleRead],
+)
+def assign_user_role(
+    user_id: UUID,
+    data: UserRoleAssign,
+    db: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("users.update")),
+    ],
+) -> list[RoleRead]:
+
+    user = get_user_by_id(
+        db,
+        user_id,
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado.",
+        )
+
+    role = get_role_by_id(
+        db,
+        data.role_id,
+    )
+
+    if role is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rol no encontrado.",
+        )
+
+    assign_role_to_user(
+        db,
+        user,
+        role,
+    )
+
+    return user.roles
+
+@router.delete(
+    "/{user_id}/roles/{role_id}",
+    response_model=list[RoleRead],
+)
+def remove_user_role(
+    user_id: UUID,
+    role_id: UUID,
+    db: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("users.update")),
+    ],
+) -> list[RoleRead]:
+
+    user = get_user_by_id(
+        db,
+        user_id,
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado.",
+        )
+
+    role = get_role_by_id(
+        db,
+        role_id,
+    )
+
+    if role is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rol no encontrado.",
+        )
+
+    remove_role_from_user(
+        db,
+        user,
+        role,
+    )
+
+    return user.roles
