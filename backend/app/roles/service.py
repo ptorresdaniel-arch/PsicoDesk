@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -54,6 +55,15 @@ def get_role_by_name(
         Role.name == name,
     )
 
+    return db.scalar(statement)
+
+def get_role_by_id(
+    db: Session,
+    role_id: UUID,
+)-> Role | None:
+    statement = select(Role).where(
+        Role.id == role_id,
+    )
     return db.scalar(statement)
 
 def delete_role(

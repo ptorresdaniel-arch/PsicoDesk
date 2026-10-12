@@ -1,11 +1,17 @@
-from app.auth.service import (
-    assign_permission_to_role,
-    assign_role_to_user,
+from app.permissions.service import(
     create_permission,
-    create_role,
     get_permission_by_code,
+)
+from app.roles.service import(
+    assign_permission_to_role,
+    create_role,
     get_role_by_name,
 )
+from app.users.service import(
+    assign_role_to_user,
+    get_user_by_email,
+)
+
 from app.core.database import SessionLocal
 
 from app.patients import models as patient_models

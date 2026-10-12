@@ -29,11 +29,12 @@ from app.auth.dependencies import(
     require_permission,
     get_current_user,
     )
-from app.auth.service import(
-    get_role_by_id,
+from app.users.service import(
     assign_role_to_user,
-    remove_role_from_user,
-    )
+    create_user,
+    get_user_by_email,remove_role_from_user
+)
+from app.roles.service import get_role_by_id
 
 from app.users.models import User
 from app.users.service import update_user

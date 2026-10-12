@@ -2,10 +2,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth.models import(
-    Permission,
-    Role,
-)
+from app.auth.models import Permission
 from app.permissions.schemas import PermissionCreate
 
 

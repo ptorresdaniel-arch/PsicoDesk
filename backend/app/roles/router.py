@@ -25,7 +25,7 @@ from app.roles.service import(
     create_role,
     delete_role,
     )
-from app.auth.service import get_role_by_id
+from app.roles.service import get_role_by_id
 from app.users.models import User
 
 

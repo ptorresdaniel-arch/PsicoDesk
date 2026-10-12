@@ -16,7 +16,6 @@ from app.users.schemas import(
     )
 
 from app.auth.models import Role
-from app.auth.service import assign_role_to_user
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
@@ -123,3 +122,25 @@ def assign_role(
         user,
         role,
     )
+    
+
+def assign_role_to_user(
+    db: Session,
+    user: User,
+    role: Role,
+) -> None:
+
+    if role not in user.roles:
+        user.roles.append(role)
+        db.commit()
+
+
+def remove_role_from_user(
+    db: Session,
+    user: User,
+    role: Role,
+) -> None:
+
+    if role in user.roles:
+        user.roles.remove(role)
+        db.commit()
