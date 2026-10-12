@@ -6,13 +6,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.roles.schemas import RoleRead
 from app.users.schemas import(
     UserCreate,
     UserRead,
     UserUpdate,
     UserPasswordUpdate,
     UserStatusUpdate,
-    RoleRead,
     UserRoleAssign,
     )
 from app.users.service import(

@@ -84,12 +84,7 @@ class UserPasswordUpdate(BaseModel):
 class UserStatusUpdate(BaseModel):
     is_active: bool
     
-class RoleRead(BaseModel):
-    model_config = ConfigDict(
-        from_attributes=True,
-    )
-    id: UUID
-    name: str
+
     
 class UserRoleAssign(BaseModel):
     role_id: UUID
