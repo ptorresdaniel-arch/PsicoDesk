@@ -19,8 +19,8 @@ from app.appointments import models as appointments_models
 from app.clinical_sessions import models as clinical_session_models
 from app.clinical_sessions import note_models as clinical_note_models
 
-from app.users.service import get_user_by_email
-
+from app.permissions.schemas import PermissionCreate
+from app.roles.schemas import RoleCreate
 
 INITIAL_PERMISSIONS = [
     "users.read",
@@ -87,7 +87,9 @@ def seed() -> None:
         if admin_role is None:
             admin_role = create_role(
                 db,
-                ADMIN_ROLE,
+                RoleCreate(
+                    name=ADMIN_ROLE,
+                ),
             )
 
         professional_role = get_role_by_name(
@@ -98,7 +100,9 @@ def seed() -> None:
         if professional_role is None:
             professional_role = create_role(
                 db,
-                PROFESSIONAL_ROLE,
+                RoleCreate(
+                    name=PROFESSIONAL_ROLE,
+                    ),
             )
 
         # -------------------------------------------------
@@ -114,7 +118,9 @@ def seed() -> None:
             if permission is None:
                 permission = create_permission(
                     db,
-                    code,
+                    PermissionCreate(
+                        code=code,
+                        ),
                 )
 
             assign_permission_to_role(
