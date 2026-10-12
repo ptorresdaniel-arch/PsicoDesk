@@ -226,3 +226,103 @@ def test_get_current_user_with_nonexistent_user(
     assert response.json() == {
         "detail": "No se pudo validar la autenticación.",
     }
+    
+def test_get_current_user_with_token_without_subject(
+    client: TestClient,
+) -> None:
+    import jwt
+
+    from app.core.config import settings
+
+    token = jwt.encode(
+        {
+            "exp": 9999999999,
+        },
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+    response = client.get(
+        "/auth/me",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": "No se pudo validar la autenticación.",
+    }
+
+
+def test_get_current_user_with_invalid_uuid_subject(
+    client: TestClient,
+) -> None:
+    import jwt
+
+    from app.core.config import settings
+
+    token = jwt.encode(
+        {
+            "sub": "esto-no-es-un-uuid",
+            "exp": 9999999999,
+        },
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+    response = client.get(
+        "/auth/me",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": "No se pudo validar la autenticación.",
+    }
+
+
+def test_get_current_user_with_inactive_user(
+    client: TestClient,
+    db: Session,
+) -> None:
+    email = "inactive-current-user@example.com"
+
+    register_response = client.post(
+        "/users",
+        json={
+            "email": email,
+            "password": "password-test-123",
+            "first_name": "Inactive",
+            "last_name": "Current",
+        },
+    )
+
+    assert register_response.status_code == 201
+
+    user = db.scalar(
+        select(User).where(
+            User.email == email,
+        )
+    )
+
+    assert user is not None
+
+    user.is_active = False
+    db.commit()
+
+    token = create_access_token(user.id)
+
+    response = client.get(
+        "/auth/me",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {
+        "detail": "El usuario está inactivo.",
+    }
