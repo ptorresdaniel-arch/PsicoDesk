@@ -28,10 +28,10 @@ class AppointmentCreate(BaseModel):
 
 
 class AppointmentUpdate(BaseModel):
-    start_time: datetime | None = None
-    end_time: datetime | None = None
+    start_time: datetime = Field(default=None)
+    end_time: datetime = Field(default=None)
 
-    status: AppointmentStatus | None = None
+    status: AppointmentStatus = Field(default=None)
 
     title: str | None = Field(
         default=None,

@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
@@ -1030,3 +1031,65 @@ def test_create_appointment_without_permission(
     )
 
     assert response.status_code == 403
+    
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param(
+            {"start_time": None},
+            id="start-time-null",
+        ),
+        pytest.param(
+            {"end_time": None},
+            id="end-time-null",
+        ),
+        pytest.param(
+            {"status": None},
+            id="status-null",
+        ),
+    ],
+)
+def test_patch_rejects_null_required_appointment_fields(
+    client,
+    professional_headers,
+    payload,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "NullTest",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=20)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json=payload,
+    )
+
+    assert response.status_code == 422
