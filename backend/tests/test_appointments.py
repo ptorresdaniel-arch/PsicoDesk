@@ -1093,3 +1093,87 @@ def test_patch_rejects_null_required_appointment_fields(
     )
 
     assert response.status_code == 422
+
+
+def test_create_appointment_rejects_naive_datetimes(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Timezone",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=5)
+    end = start + timedelta(minutes=50)
+
+    response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.replace(
+                tzinfo=None,
+            ).isoformat(),
+            "end_time": end.replace(
+                tzinfo=None,
+            ).isoformat(),
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_appointment_rejects_naive_datetime(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "TimezonePatch",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=5)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "start_time": start.replace(
+                tzinfo=None,
+            ).isoformat(),
+        },
+    )
+
+    assert response.status_code == 422

@@ -87,7 +87,7 @@ def get_patient_profile_view(
         User,
         Depends(require_permission("patients.read")),
     ],
-)-> PatientListRead:
+)-> PatientProfileRead:
     
     patient = get_patient_by_id(
         db,

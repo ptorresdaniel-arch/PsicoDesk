@@ -3,7 +3,11 @@ from uuid import UUID
 
 from app.appointments.enums import AppointmentStatus
 
-from pydantic import BaseModel, Field
+from pydantic import(
+    BaseModel,
+    Field,
+    field_validator,
+    )
 
 
 class AppointmentCreate(BaseModel):
@@ -25,6 +29,18 @@ class AppointmentCreate(BaseModel):
     notes: str | None = None
 
     timezone: str = "America/Santiago"
+    
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def validate_timezone(
+        cls,
+        value: datetime,
+    )-> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError(
+                "La fecha debe incluir información de zona horaria."
+            )
+        return value
 
 
 class AppointmentUpdate(BaseModel):
@@ -44,6 +60,18 @@ class AppointmentUpdate(BaseModel):
     )
 
     notes: str | None = None
+    
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def validate_timezone(
+        cls,
+        value: datetime,
+    )-> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError(
+                "La fecha debe incluir información de zona horaria."
+            )
+        return value
 
 
 class AppointmentRead(BaseModel):
