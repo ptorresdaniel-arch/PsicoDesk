@@ -1,10 +1,29 @@
 from datetime import datetime, timedelta, timezone
 
 
+
 def test_dashboard_with_data(
     client,
     professional_headers,
+    monkeypatch,
 ):
+    fixed_now = datetime(
+        2026, 10, 16, 12, 0,
+        tzinfo=timezone.utc,
+    )
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            if tz is None:
+                return fixed_now.replace(tzinfo=None)
+            return fixed_now.astimezone(tz)
+
+    monkeypatch.setattr(
+        "app.dashboard.service.datetime",
+        FixedDateTime,
+    )
+
     patient_response = client.post(
         "/patients",
         headers=professional_headers,
@@ -18,13 +37,8 @@ def test_dashboard_with_data(
 
     patient_id = patient_response.json()["id"]
 
-    start = datetime.now(timezone.utc) + timedelta(
-        hours=1,
-    )
-
-    end = start + timedelta(
-        minutes=50,
-    )
+    start = fixed_now + timedelta(hours=1)
+    end = start + timedelta(minutes=50)
 
     appointment_response = client.post(
         "/appointments",
@@ -59,6 +73,7 @@ def test_dashboard_with_data(
     )
 
     assert dashboard["upcoming_appointments"] == 1
+
 
 def test_dashboard_empty(
     client,
