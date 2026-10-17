@@ -24,6 +24,7 @@ def get_patient_for_professional(
     return db.scalar(statement)
 
 
+
 def create_clinical_session(
     db: Session,
     session_data: ClinicalSessionCreate,
@@ -48,10 +49,17 @@ def create_clinical_session(
     )
 
     db.add(clinical_session)
-    db.commit()
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     db.refresh(clinical_session)
 
     return clinical_session
+
 
 
 def get_sessions_by_patient(
@@ -132,6 +140,7 @@ def get_session_by_id(
     return db.scalar(statement)
 
 
+
 def update_clinical_session(
     db: Session,
     clinical_session: ClinicalSession,
@@ -149,7 +158,12 @@ def update_clinical_session(
             value,
         )
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     db.refresh(clinical_session)
 
     return clinical_session
@@ -161,4 +175,9 @@ def delete_clinical_session(
 ) -> None:
 
     db.delete(clinical_session)
-    db.commit()
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise

@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+from uuid import uuid4
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -5,6 +7,12 @@ from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 
+from app.clinical_sessions import service as clinical_session_service
+from app.clinical_sessions.models import ClinicalSession
+from app.clinical_sessions.schemas import(
+    ClinicalSessionCreate,
+    ClinicalSessionUpdate,
+)
 
 def test_create_clinical_session(
     client: TestClient,
@@ -772,3 +780,87 @@ def test_create_clinical_session_note_rolls_back_when_commit_fails(
             )
 
     assert rollback_calls == [True]
+
+
+def test_create_clinical_session_rolls_back_when_commit_fails(
+    monkeypatch,
+):
+    db = MagicMock()
+    patient = MagicMock()
+    patient.id = uuid4()
+
+    monkeypatch.setattr(
+        clinical_session_service,
+        "get_patient_for_professional",
+        lambda db, patient_id, professional_id: patient,
+    )
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    data = ClinicalSessionCreate(
+        patient_id=patient.id,
+        session_date=datetime.now(timezone.utc),
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        clinical_session_service.create_clinical_session(
+            db,
+            data,
+            uuid4(),
+        )
+
+    db.add.assert_called_once()
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_update_clinical_session_rolls_back_when_commit_fails():
+    db = MagicMock()
+    clinical_session = MagicMock(spec=ClinicalSession)
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    data = ClinicalSessionUpdate(
+        summary="Resumen actualizado",
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        clinical_session_service.update_clinical_session(
+            db,
+            clinical_session,
+            data,
+        )
+
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_delete_clinical_session_rolls_back_when_commit_fails():
+    db = MagicMock()
+    clinical_session = MagicMock(spec=ClinicalSession)
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        clinical_session_service.delete_clinical_session(
+            db,
+            clinical_session,
+        )
+
+    db.delete.assert_called_once_with(clinical_session)
+    db.rollback.assert_called_once_with()
