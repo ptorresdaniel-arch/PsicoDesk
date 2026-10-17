@@ -224,7 +224,7 @@ def test_appointment_crud(
 
     assert final_response.status_code == 404
 
-def test_get_appointments_by_date_range(
+def test_calendar_returns_appointments_within_date_range(
     client,
     professional_headers,
 ):

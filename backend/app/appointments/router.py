@@ -23,7 +23,6 @@ from app.appointments.service import (
     get_appointment_by_id,
     get_professional_appointments,
     update_appointment,
-    get_appointments_by_date_range,
     create_clinical_session_from_appointment,
     get_calendar_appointments,
     check_appointment_availability,
