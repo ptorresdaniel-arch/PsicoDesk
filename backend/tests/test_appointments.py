@@ -1287,3 +1287,63 @@ def test_calendar_includes_appointment_started_before_range(
     assert appointments[0]["id"] == (
         appointment_response.json()["id"]
     )
+
+
+def test_cancelled_appointment_does_not_block_time_slot(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Cancelacion",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=15)
+    end = start + timedelta(minutes=50)
+
+    first_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Cita original",
+        },
+    )
+
+    assert first_response.status_code == 201
+
+    appointment_id = first_response.json()["id"]
+
+    cancel_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={
+            "status": "cancelled",
+        },
+    )
+
+    assert cancel_response.status_code == 200
+    assert cancel_response.json()["status"] == "cancelled"
+
+    replacement_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Nueva cita",
+        },
+    )
+
+    assert replacement_response.status_code == 201

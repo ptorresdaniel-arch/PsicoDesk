@@ -41,6 +41,7 @@ def has_schedule_conflict(
 
     statement = select(Appointment).where(
         Appointment.professional_id == professional_id,
+        Appointment.status != AppointmentStatus.cancelled,
         Appointment.start_time < end_time,
         Appointment.end_time > start_time,
     )
