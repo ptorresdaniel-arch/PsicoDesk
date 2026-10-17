@@ -363,7 +363,17 @@ def test_professional_cannot_access_another_professionals_notes(
     assert note_response.status_code == 201
 
     other_professional_headers = professional_factory()
-
+    
+    create_response = client.post(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=other_professional_headers,
+        json={
+            "content": "Intento de nota no autorizado",
+        },
+    )
+    
+    assert create_response.status_code == 404
+    
     response = client.get(
         f"/clinical-sessions/{session_id}/notes",
         headers=other_professional_headers,
