@@ -1347,3 +1347,60 @@ def test_cancelled_appointment_does_not_block_time_slot(
     )
 
     assert replacement_response.status_code == 201
+
+
+def test_availability_is_free_after_cancellation(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Disponibilidad",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=20)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    appointment_id = appointment_response.json()["id"]
+
+    cancel_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "cancelled"},
+    )
+
+    assert cancel_response.status_code == 200
+
+    availability_response = client.get(
+        "/appointments/availability",
+        headers=professional_headers,
+        params={
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert availability_response.status_code == 200
+    assert availability_response.json() == {
+        "available": True,
+    }
