@@ -496,6 +496,7 @@ def test_clinical_session_note_is_immutable(
     assert delete_response.status_code == 404
     
 
+
 def test_list_clinical_session_notes_pagination(
     client,
     professional_headers,
@@ -541,7 +542,10 @@ def test_list_clinical_session_notes_pagination(
         )
 
         assert note_response.status_code == 201
-        created_note_ids.add(note_response.json()["id"])
+
+        created_note_ids.add(
+            note_response.json()["id"]
+        )
 
     first_response = client.get(
         f"/clinical-sessions/{session_id}/notes",
@@ -590,3 +594,115 @@ def test_list_clinical_session_notes_pagination(
     }
 
     assert returned_note_ids == created_note_ids
+
+    third_response = client.get(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+        params={
+            "page": 3,
+            "limit": 1,
+        },
+    )
+
+    assert third_response.status_code == 200
+
+    third_page = third_response.json()
+
+    assert third_page["items"] == []
+    assert third_page["total"] == 2
+    assert third_page["page"] == 3
+    assert third_page["limit"] == 1
+
+
+
+def test_list_clinical_session_notes_rejects_invalid_pagination_params(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Limites",
+        },
+    )
+
+    assert patient_response.status_code == 201
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        },
+    )
+
+    assert session_response.status_code == 201
+    session_id = session_response.json()["id"]
+
+    invalid_params = [
+        {"page": 0},
+        {"limit": 0},
+        {"limit": 101},
+    ]
+
+    for params in invalid_params:
+        response = client.get(
+            f"/clinical-sessions/{session_id}/notes",
+            headers=professional_headers,
+            params=params,
+        )
+
+        assert response.status_code == 422, (
+            f"Se esperaban parámetros inválidos: {params}"
+        )
+
+
+def test_list_clinical_session_notes_empty(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "SinNotas",
+        },
+    )
+
+    assert patient_response.status_code == 201
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        },
+    )
+
+    assert session_response.status_code == 201
+    session_id = session_response.json()["id"]
+
+    response = client.get(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["items"] == []
+    assert data["total"] == 0
+    assert data["page"] == 1
+    assert data["limit"] == 20
