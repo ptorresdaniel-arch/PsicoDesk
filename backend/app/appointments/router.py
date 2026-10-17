@@ -1,3 +1,4 @@
+from pydantic import AwareDatetime
 from datetime import datetime
 from uuid import UUID
 
@@ -93,8 +94,8 @@ def list_my_appointments(
     response_model=list[AppointmentCalendarRead],
 )
 def calendar(
-    start_date: datetime,
-    end_date: datetime,
+    start_date: AwareDatetime,
+    end_date: AwareDatetime,
     db: Session = Depends(get_db),
     current_user: User = Depends(
         require_permission("appointments.read")
@@ -113,8 +114,8 @@ def calendar(
     response_model=AppointmentAvailabilityRead,
 )
 def availability(
-    start_time: datetime,
-    end_time: datetime,
+    start_time: AwareDatetime,
+    end_time: AwareDatetime,
     db: Session = Depends(get_db),
     current_user: User = Depends(
         require_permission("appointments.read")

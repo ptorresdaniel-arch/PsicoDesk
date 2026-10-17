@@ -1177,3 +1177,35 @@ def test_update_appointment_rejects_naive_datetime(
     )
 
     assert response.status_code == 422
+
+
+def test_calendar_rejects_naive_datetimes(
+    client,
+    professional_headers,
+):
+    response = client.get(
+        "/appointments/calendar",
+        headers=professional_headers,
+        params={
+            "start_date": "2026-10-16T10:00:00",
+            "end_date": "2026-10-16T18:00:00",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_availability_rejects_naive_datetimes(
+    client,
+    professional_headers,
+):
+    response = client.get(
+        "/appointments/availability",
+        headers=professional_headers,
+        params={
+            "start_time": "2026-10-16T10:00:00",
+            "end_time": "2026-10-16T11:00:00",
+        },
+    )
+
+    assert response.status_code == 422
