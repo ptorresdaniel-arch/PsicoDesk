@@ -42,7 +42,11 @@ def create_session_note(
     )
 
     db.add(note)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(note)
 
     return note

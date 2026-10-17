@@ -1,3 +1,6 @@
+import pytest
+from sqlalchemy.exc import SQLAlchemyError
+
 from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
@@ -706,3 +709,66 @@ def test_list_clinical_session_notes_empty(
     assert data["total"] == 0
     assert data["page"] == 1
     assert data["limit"] == 20
+
+
+def test_create_clinical_session_note_rolls_back_when_commit_fails(
+    client,
+    professional_headers,
+    db,
+    monkeypatch,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Rollback",
+        },
+    )
+
+    assert patient_response.status_code == 201
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        },
+    )
+
+    assert session_response.status_code == 201
+    session_id = session_response.json()["id"]
+
+    original_rollback = db.rollback
+    rollback_calls = []
+
+    def failing_commit():
+        raise SQLAlchemyError(
+            "Fallo simulado durante el commit"
+        )
+
+    def tracking_rollback():
+        rollback_calls.append(True)
+        original_rollback()
+
+    with monkeypatch.context() as patch:
+        patch.setattr(db, "commit", failing_commit)
+        patch.setattr(db, "rollback", tracking_rollback)
+
+        with pytest.raises(
+            SQLAlchemyError,
+            match="Fallo simulado durante el commit",
+        ):
+            client.post(
+                f"/clinical-sessions/{session_id}/notes",
+                headers=professional_headers,
+                json={
+                    "content": "Nota de prueba.",
+                },
+            )
+
+    assert rollback_calls == [True]
