@@ -101,6 +101,12 @@ def calendar(
         require_permission("appointments.read")
         ),
 )-> list[AppointmentCalendarRead]:
+    
+    if end_date <= start_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="La fecha de término debe ser posterior a la fecha de inicio.",
+        )
 
     return get_calendar_appointments(
         db,

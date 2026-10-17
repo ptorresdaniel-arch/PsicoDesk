@@ -1209,3 +1209,19 @@ def test_availability_rejects_naive_datetimes(
     )
 
     assert response.status_code == 422
+
+
+def test_calendar_rejects_end_date_before_start_date(
+    client,
+    professional_headers,
+):
+    response = client.get(
+        "/appointments/calendar",
+        headers=professional_headers,
+        params={
+            "start_date": "2026-10-17T18:00:00+00:00",
+            "end_date": "2026-10-17T10:00:00+00:00",
+        },
+    )
+
+    assert response.status_code == 422
