@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.clinical_sessions.models import ClinicalSession
@@ -51,19 +51,34 @@ def create_session_note(
 def get_session_notes(
     db: Session,
     clinical_session_id: UUID,
-) -> list[ClinicalSessionNote]:
+    page: int,
+    limit: int,
+):
+    base_statement = select(ClinicalSessionNote).where(
+        ClinicalSessionNote.clinical_session_id
+        == clinical_session_id
+    )
+
+    total = db.scalar(
+        select(func.count())
+        .select_from(base_statement.subquery())
+    ) or 0
 
     statement = (
-        select(ClinicalSessionNote)
-        .where(
-            ClinicalSessionNote.clinical_session_id
-            == clinical_session_id
-        )
+        base_statement
         .order_by(
-            ClinicalSessionNote.created_at.desc()
+            ClinicalSessionNote.created_at.desc(),
+            ClinicalSessionNote.id.desc(),
         )
+        .offset((page - 1) * limit)
+        .limit(limit)
     )
 
-    return list(
-        db.scalars(statement).all()
-    )
+    items = list(db.scalars(statement).all())
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }

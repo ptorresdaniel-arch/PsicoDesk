@@ -309,6 +309,7 @@ def test_create_clinical_session_note_rejects_whitespace_only_content(
     assert response.status_code == 422
 
     
+
 def test_list_clinical_session_notes(
     client,
     professional_headers,
@@ -322,6 +323,8 @@ def test_list_clinical_session_notes(
         },
     )
 
+    assert patient_response.status_code == 201
+
     patient_id = patient_response.json()["id"]
 
     session_response = client.post(
@@ -334,6 +337,8 @@ def test_list_clinical_session_notes(
             ).isoformat(),
         },
     )
+
+    assert session_response.status_code == 201
 
     session_id = session_response.json()["id"]
 
@@ -358,12 +363,18 @@ def test_list_clinical_session_notes(
 
     assert response.status_code == 200
 
-    notes = response.json()
+    data = response.json()
+    notes = data["items"]
+
+    assert data["total"] == 2
+    assert data["page"] == 1
+    assert data["limit"] == 20
 
     assert len(notes) == 2
-    assert notes[0]["content"] == (
-        "Segunda observación"
-    )
+
+    assert notes[0]["content"] == "Segunda observación"
+    assert notes[1]["content"] == "Primera observación"
+
 
 def test_professional_cannot_access_another_professionals_notes(
     client,
@@ -483,3 +494,99 @@ def test_clinical_session_note_is_immutable(
     )
 
     assert delete_response.status_code == 404
+    
+
+def test_list_clinical_session_notes_pagination(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Paginacion",
+        },
+    )
+
+    assert patient_response.status_code == 201
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        },
+    )
+
+    assert session_response.status_code == 201
+    session_id = session_response.json()["id"]
+
+    created_note_ids = set()
+
+    for content in [
+        "Primera observación",
+        "Segunda observación",
+    ]:
+        note_response = client.post(
+            f"/clinical-sessions/{session_id}/notes",
+            headers=professional_headers,
+            json={
+                "content": content,
+            },
+        )
+
+        assert note_response.status_code == 201
+        created_note_ids.add(note_response.json()["id"])
+
+    first_response = client.get(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+        params={
+            "page": 1,
+            "limit": 1,
+        },
+    )
+
+    second_response = client.get(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+        params={
+            "page": 2,
+            "limit": 1,
+        },
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+
+    first_page = first_response.json()
+    second_page = second_response.json()
+
+    assert first_page["total"] == 2
+    assert second_page["total"] == 2
+
+    assert first_page["page"] == 1
+    assert second_page["page"] == 2
+
+    assert first_page["limit"] == 1
+    assert second_page["limit"] == 1
+
+    assert len(first_page["items"]) == 1
+    assert len(second_page["items"]) == 1
+
+    first_note_id = first_page["items"][0]["id"]
+    second_note_id = second_page["items"][0]["id"]
+
+    assert first_note_id != second_note_id
+
+    returned_note_ids = {
+        first_note_id,
+        second_note_id,
+    }
+
+    assert returned_note_ids == created_note_ids

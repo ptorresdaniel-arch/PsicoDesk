@@ -39,3 +39,9 @@ class ClinicalSessionNoteRead(BaseModel):
     model_config = {
         "from_attributes": True
     }
+    
+class ClinicalSessionNoteListRead(BaseModel):
+    items: list[ClinicalSessionNoteRead]
+    total: int
+    page: int
+    limit: int

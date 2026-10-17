@@ -25,6 +25,7 @@ from app.clinical_sessions.service import (
 from app.clinical_sessions.note_schemas import(
     ClinicalSessionNoteCreate,
     ClinicalSessionNoteRead,
+    ClinicalSessionNoteListRead,
     )
 from app.clinical_sessions.note_service import(
     create_session_note,
@@ -214,15 +215,17 @@ def create_note(
 
 @router.get(
     "/{session_id}/notes",
-    response_model=list[ClinicalSessionNoteRead],
+    response_model=ClinicalSessionNoteListRead,
 )
 def list_notes(
     session_id: UUID,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(
         require_permission("clinical_notes.read")
-        ),
-)-> list[ClinicalSessionNoteRead]:
+    ),
+) -> ClinicalSessionNoteListRead:
     clinical_session = get_session_for_professional(
         db,
         session_id,
@@ -238,4 +241,6 @@ def list_notes(
     return get_session_notes(
         db,
         session_id,
+        page,
+        limit,
     )
