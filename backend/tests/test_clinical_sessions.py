@@ -267,6 +267,48 @@ def test_create_clinical_session_note(
     )
     assert note["created_by"] is not None
     
+
+def test_create_clinical_session_note_rejects_whitespace_only_content(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "NotaVacia",
+        },
+    )
+
+    assert patient_response.status_code == 201
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        },
+    )
+
+    assert session_response.status_code == 201
+    session_id = session_response.json()["id"]
+
+    response = client.post(
+        f"/clinical-sessions/{session_id}/notes",
+        headers=professional_headers,
+        json={
+            "content": "   \t\n",
+        },
+    )
+
+    assert response.status_code == 422
+
+    
 def test_list_clinical_session_notes(
     client,
     professional_headers,
