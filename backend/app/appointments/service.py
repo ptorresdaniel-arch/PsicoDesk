@@ -249,8 +249,8 @@ def get_calendar_appointments(
         )
         .where(
             Appointment.professional_id == professional_id,
-            Appointment.start_time >= start_date,
-            Appointment.start_time <= end_date,
+            Appointment.start_time < end_date,
+            Appointment.end_time > start_date,
         )
         .order_by(
             Appointment.start_time,

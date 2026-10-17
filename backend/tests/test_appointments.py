@@ -1225,3 +1225,65 @@ def test_calendar_rejects_end_date_before_start_date(
     )
 
     assert response.status_code == 422
+
+
+def test_calendar_includes_appointment_started_before_range(
+    client,
+    professional_headers,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Rango",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    appointment_start = (
+        datetime.now(timezone.utc) + timedelta(days=5)
+    )
+    appointment_end = appointment_start + timedelta(
+        minutes=50,
+    )
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": appointment_start.isoformat(),
+            "end_time": appointment_end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+
+    range_start = appointment_start + timedelta(
+        minutes=20,
+    )
+    range_end = appointment_end + timedelta(
+        hours=1,
+    )
+
+    response = client.get(
+        "/appointments/calendar",
+        headers=professional_headers,
+        params={
+            "start_date": range_start.isoformat(),
+            "end_date": range_end.isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+
+    appointments = response.json()
+
+    assert len(appointments) == 1
+    assert appointments[0]["id"] == (
+        appointment_response.json()["id"]
+    )
