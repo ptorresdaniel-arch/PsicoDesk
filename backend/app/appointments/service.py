@@ -3,6 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import select, or_, func
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError
 
 from app.appointments.models import Appointment
 from app.appointments.schemas import (
@@ -308,7 +309,21 @@ def create_clinical_session_from_appointment(
     )
 
     db.add(clinical_session)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        
+        constraint_name = getattr(
+            getattr(error.orig, "diag", None),
+            "constraint_name",
+            None,
+        )
+        if constraint_name == "uq_clinical_sessions_appointment_id":
+            raise ValueError(
+                "La cita ya tiene una sesión clínica asociada."
+            ) from error
+        raise
     db.refresh(clinical_session)
 
     return clinical_session

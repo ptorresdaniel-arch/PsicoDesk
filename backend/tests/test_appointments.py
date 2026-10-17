@@ -1,6 +1,9 @@
 import pytest
 from datetime import datetime, timedelta, timezone
 
+from types import SimpleNamespace
+from sqlalchemy.exc import IntegrityError
+
 from fastapi.testclient import TestClient
 
 
@@ -1404,3 +1407,87 @@ def test_availability_is_free_after_cancellation(
     assert availability_response.json() == {
         "available": True,
     }
+
+
+def test_clinical_session_integrity_error_rolls_back_and_returns_400(
+    client,
+    professional_headers,
+    db,
+    monkeypatch,
+):
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Integridad",
+        },
+    )
+
+    assert patient_response.status_code == 201
+    patient_id = patient_response.json()["id"]
+
+    start = datetime.now(timezone.utc) + timedelta(days=20)
+    end = start + timedelta(minutes=50)
+
+    appointment_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+        },
+    )
+
+    assert appointment_response.status_code == 201
+    appointment_id = appointment_response.json()["id"]
+
+    confirmed_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "confirmed"},
+    )
+    assert confirmed_response.status_code == 200
+
+    completed_response = client.patch(
+        f"/appointments/{appointment_id}",
+        headers=professional_headers,
+        json={"status": "completed"},
+    )
+    assert completed_response.status_code == 200
+
+    original_rollback = db.rollback
+    rollback_called = False
+
+    def failing_commit():
+        raise IntegrityError(
+            "INSERT INTO clinical_sessions",
+            {},
+            SimpleNamespace(
+                diag=SimpleNamespace(
+                    constraint_name=(
+                        "uq_clinical_sessions_appointment_id"
+                    ),
+                ),
+            ),
+        )
+
+    def tracked_rollback():
+        nonlocal rollback_called
+        rollback_called = True
+        original_rollback()
+
+    monkeypatch.setattr(db, "commit", failing_commit)
+    monkeypatch.setattr(db, "rollback", tracked_rollback)
+
+    response = client.post(
+        f"/appointments/{appointment_id}/clinical-session",
+        headers=professional_headers,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "La cita ya tiene una sesión clínica asociada."
+    )
+    assert rollback_called
