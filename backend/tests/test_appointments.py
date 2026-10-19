@@ -1,9 +1,13 @@
 import pytest
+from uuid import uuid4
+from unittest.mock import MagicMock
 from datetime import datetime, timedelta, timezone
 
 from types import SimpleNamespace
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app.appointments import service as appointment_service
+from app.appointments.models import Appointment
 from fastapi.testclient import TestClient
 
 
@@ -1491,3 +1495,114 @@ def test_clinical_session_integrity_error_rolls_back_and_returns_400(
         "La cita ya tiene una sesión clínica asociada."
     )
     assert rollback_called
+
+def test_create_appointment_rolls_back_when_commit_fails(
+    monkeypatch,
+):
+    db = MagicMock()
+    professional_id = uuid4()
+
+    patient = MagicMock()
+    patient.id = uuid4()
+
+    appointment_data = MagicMock()
+    appointment_data.start_time = (
+        datetime.now(timezone.utc) + timedelta(days=20)
+    )
+    appointment_data.end_time = (
+        appointment_data.start_time + timedelta(minutes=50)
+    )
+    appointment_data.patient_id = patient.id
+    appointment_data.title = "Cita rollback"
+    appointment_data.reason = None
+    appointment_data.notes = None
+    appointment_data.timezone = "UTC"
+
+    monkeypatch.setattr(
+        appointment_service,
+        "get_patient_for_professional",
+        lambda db, patient_id, professional_id: patient,
+    )
+
+    monkeypatch.setattr(
+        appointment_service,
+        "has_schedule_conflict",
+        lambda db, professional_id, start_time, end_time: False,
+    )
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        appointment_service.create_appointment(
+            db,
+            appointment_data,
+            professional_id,
+        )
+
+    db.add.assert_called_once()
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_update_appointment_rolls_back_when_commit_fails():
+    db = MagicMock()
+    appointment = MagicMock(spec=Appointment)
+
+    appointment.start_time = (
+        datetime.now(timezone.utc) + timedelta(days=20)
+    )
+    appointment.end_time = (
+        appointment.start_time + timedelta(minutes=50)
+    )
+    appointment.professional_id = uuid4()
+    appointment.id = uuid4()
+
+    data = MagicMock()
+    data.model_dump.return_value = {
+        "title": "Cita actualizada",
+    }
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        appointment_service.update_appointment(
+            db,
+            appointment,
+            data,
+        )
+
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_delete_appointment_rolls_back_when_commit_fails():
+    db = MagicMock()
+    appointment = MagicMock(spec=Appointment)
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        appointment_service.delete_appointment(
+            db,
+            appointment,
+        )
+
+    db.delete.assert_called_once_with(appointment)
+    db.rollback.assert_called_once_with()

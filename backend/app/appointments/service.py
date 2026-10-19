@@ -97,7 +97,11 @@ def create_appointment(
     )
 
     db.add(appointment)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(appointment)
 
     return appointment
@@ -197,7 +201,11 @@ def update_appointment(
             value,
         )
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(appointment)
 
     return appointment
@@ -209,7 +217,11 @@ def delete_appointment(
 ):
 
     db.delete(appointment)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 
 def get_appointments_by_date_range(
