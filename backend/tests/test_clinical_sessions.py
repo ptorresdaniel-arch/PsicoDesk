@@ -751,17 +751,15 @@ def test_create_clinical_session_note_rolls_back_when_commit_fails(
     assert session_response.status_code == 201
     session_id = session_response.json()["id"]
 
-    original_rollback = db.rollback
     rollback_calls = []
-
+    
     def failing_commit():
         raise SQLAlchemyError(
             "Fallo simulado durante el commit"
         )
-
+    
     def tracking_rollback():
         rollback_calls.append(True)
-        original_rollback()
 
     with monkeypatch.context() as patch:
         patch.setattr(db, "commit", failing_commit)
