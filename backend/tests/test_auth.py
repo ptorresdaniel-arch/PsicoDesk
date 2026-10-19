@@ -326,3 +326,50 @@ def test_get_current_user_with_inactive_user(
     assert response.json() == {
         "detail": "El usuario está inactivo.",
     }
+    
+def test_get_current_user_with_expired_token(
+    client: TestClient,
+) -> None:
+    import jwt
+    from datetime import datetime, timedelta, timezone
+
+    from app.core.config import settings
+
+    register_response = client.post(
+        "/users",
+        json={
+            "email": "expired-token@example.com",
+            "password": "password-test-123",
+            "first_name": "Expired",
+            "last_name": "Token",
+        },
+    )
+
+    assert register_response.status_code == 201
+
+    user_id = register_response.json()["id"]
+
+    expired_at = datetime.now(timezone.utc) - timedelta(
+        minutes=5,
+    )
+
+    token = jwt.encode(
+        {
+            "sub": user_id,
+            "exp": expired_at,
+        },
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+    response = client.get(
+        "/auth/me",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": "No se pudo validar la autenticación.",
+    }
