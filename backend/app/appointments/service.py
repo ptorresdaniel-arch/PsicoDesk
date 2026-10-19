@@ -336,6 +336,10 @@ def create_clinical_session_from_appointment(
                 "La cita ya tiene una sesión clínica asociada."
             ) from error
         raise
+    except Exception:
+        db.rollback()
+        raise
+    
     db.refresh(clinical_session)
 
     return clinical_session
@@ -395,3 +399,4 @@ def get_appointment_summary(
             summary[status] = count
 
     return summary
+

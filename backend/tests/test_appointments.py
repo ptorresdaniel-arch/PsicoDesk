@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.appointments import service as appointment_service
 from app.appointments.models import Appointment
+from app.appointments.enums import AppointmentStatus
 from fastapi.testclient import TestClient
 
 
@@ -1606,3 +1607,35 @@ def test_delete_appointment_rolls_back_when_commit_fails():
 
     db.delete.assert_called_once_with(appointment)
     db.rollback.assert_called_once_with()
+    
+def test_create_clinical_session_rolls_back_when_commit_fails():
+    db = MagicMock()
+    appointment = MagicMock()
+
+    appointment.id = uuid4()
+    appointment.patient_id = uuid4()
+    appointment.status = AppointmentStatus.completed
+    appointment.clinical_session = None
+    appointment.start_time = (
+        datetime.now(timezone.utc) + timedelta(days=20)
+    )
+    appointment.end_time = (
+        appointment.start_time + timedelta(minutes=50)
+    )
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        appointment_service.create_clinical_session_from_appointment(
+            db,
+            appointment,
+        )
+
+    db.add.assert_called_once()
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
