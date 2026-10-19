@@ -1,9 +1,19 @@
+import pytest
+from unittest.mock import MagicMock
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
+from app.users import service as user_service
 from app.users.models import User
-
+from app.users.schemas import(
+    UserCreate,
+    UserUpdate,
+    UserPasswordUpdate,
+)
 from app.auth.models import Role
 
 
@@ -494,3 +504,189 @@ def test_user_without_permission_cannot_remove_role(
     )
 
     assert response.status_code == 403
+
+def test_create_user_rolls_back_when_commit_fails():
+    db = MagicMock()
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    data = UserCreate(
+        email="rollback@example.com",
+        password="password-test-123",
+        first_name="Rollback",
+        last_name="User",
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        user_service.create_user(
+            db,
+            data,
+        )
+
+    db.add.assert_called_once()
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_update_last_login_rolls_back_when_commit_fails():
+    db = MagicMock()
+    user = MagicMock(spec=User)
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        user_service.update_last_login(
+            db,
+            user,
+        )
+
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_update_user_rolls_back_when_commit_fails():
+    db = MagicMock()
+    user = MagicMock(spec=User)
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    data = UserUpdate(
+        first_name="Actualizado",
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        user_service.update_user(
+            db,
+            user,
+            data,
+        )
+
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_change_password_rolls_back_when_commit_fails(
+    monkeypatch,
+):
+    db = MagicMock()
+    user = MagicMock(spec=User)
+    user.password_hash = "hash-anterior"
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    monkeypatch.setattr(
+        user_service,
+        "verify_password",
+        lambda password, password_hash: True,
+    )
+
+    monkeypatch.setattr(
+        user_service,
+        "hash_password",
+        lambda password: "hash-nuevo",
+    )
+
+    data = UserPasswordUpdate(
+        current_password="password-anterior",
+        new_password="password-nuevo",
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        user_service.change_password(
+            db,
+            user,
+            data,
+        )
+
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_update_user_status_rolls_back_when_commit_fails():
+    db = MagicMock()
+    user = MagicMock(spec=User)
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        user_service.update_user_status(
+            db,
+            user,
+            False,
+        )
+
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_assign_role_to_user_rolls_back_when_commit_fails():
+    db = MagicMock()
+    user = MagicMock(spec=User)
+    role = MagicMock(spec=Role)
+
+    user.roles = []
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        user_service.assign_role_to_user(
+            db,
+            user,
+            role,
+        )
+
+    db.rollback.assert_called_once_with()
+
+
+def test_remove_role_from_user_rolls_back_when_commit_fails():
+    db = MagicMock()
+    user = MagicMock(spec=User)
+    role = MagicMock(spec=Role)
+
+    user.roles = [role]
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        user_service.remove_role_from_user(
+            db,
+            user,
+            role,
+        )
+
+    db.rollback.assert_called_once_with()

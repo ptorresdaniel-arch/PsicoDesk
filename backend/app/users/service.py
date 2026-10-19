@@ -38,7 +38,11 @@ def create_user(db: Session, user_data: UserCreate) -> User:
         specialty=user_data.specialty,
 )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(user)
     
     return user
@@ -46,7 +50,11 @@ def create_user(db: Session, user_data: UserCreate) -> User:
 def update_last_login(db: Session, user: User) -> User:
     user.last_login_at = datetime.now(timezone.utc)
     
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(user)
     
     return user
@@ -68,7 +76,11 @@ def update_user(
             value,
         )
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(user)
 
     return user
@@ -89,7 +101,11 @@ def change_password(
         password_data.new_password,
     )
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(user)
 
     return True
@@ -102,7 +118,11 @@ def update_user_status(
 
     user.is_active = is_active
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(user)
 
     return user
@@ -132,7 +152,11 @@ def assign_role_to_user(
 
     if role not in user.roles:
         user.roles.append(role)
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
 
 
 def remove_role_from_user(
@@ -143,4 +167,8 @@ def remove_role_from_user(
 
     if role in user.roles:
         user.roles.remove(role)
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
