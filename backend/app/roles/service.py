@@ -41,7 +41,11 @@ def create_role(
     )
     
     db.add(role)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(role)
     
     return role
@@ -77,7 +81,11 @@ def delete_role(
         )
 
     db.delete(role)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 def assign_permission_to_role(
     db: Session,
@@ -87,7 +95,11 @@ def assign_permission_to_role(
 
     if permission not in role.permissions:
         role.permissions.append(permission)
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
         
 def remove_permission_from_role(
     db: Session,
@@ -97,4 +109,8 @@ def remove_permission_from_role(
 
     if permission in role.permissions:
         role.permissions.remove(permission)
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise

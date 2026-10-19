@@ -1,7 +1,13 @@
+import pytest
+from unittest.mock import MagicMock
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.models import Permission
+from app.permissions import service as permission_service
+from app.permissions.schemas import PermissionCreate
 
 
 def test_list_permissions_with_permission(
@@ -103,3 +109,34 @@ def test_user_without_permission_cannot_create_permission(
 
     assert response.status_code == 403
     
+def test_create_permission_rolls_back_when_commit_fails(
+    monkeypatch,
+):
+    db = MagicMock()
+
+    monkeypatch.setattr(
+        permission_service,
+        "get_permission_by_code",
+        lambda db, code: None,
+    )
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    data = PermissionCreate(
+        code="rollback.permission",
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        permission_service.create_permission(
+            db,
+            data,
+        )
+
+    db.add.assert_called_once()
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()

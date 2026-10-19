@@ -52,7 +52,11 @@ def create_permission(
     )
 
     db.add(permission)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(permission)
 
     return permission
