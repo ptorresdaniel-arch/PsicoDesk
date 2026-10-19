@@ -25,7 +25,11 @@ def create_patient(
     )
 
     db.add(patient)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(patient)
 
     return patient
@@ -39,9 +43,17 @@ def update_patient(
         exclude_unset=True,
     )
     for field, value in update_data.items():
-        setattr(patient, field, value)
+        setattr(
+            patient,
+            field,
+            value,
+            )
         
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(patient)
     
     return patient
@@ -51,7 +63,11 @@ def delete_patient(
     patient: Patient,
 ) -> None:
     db.delete(patient)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 def apply_patient_filters(
     statement,

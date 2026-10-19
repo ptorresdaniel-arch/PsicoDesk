@@ -1,5 +1,16 @@
+import pytest
+from unittest.mock import MagicMock
+from uuid import uuid4
+
+from sqlalchemy.exc import SQLAlchemyError
+
 from fastapi.testclient import TestClient
 from datetime import datetime, timezone, timedelta
+
+from app.patients import service as patient_service
+from app.patients.models import Patient
+from app.patients.schemas import PatientCreate, PatientUpdate
+from app.users.models import User
 
 def test_create_patient_without_permission(
     client: TestClient,
@@ -658,3 +669,78 @@ def test_patient_list_rejects_limit_above_maximum(
     )
 
     assert response.status_code == 422
+
+def test_create_patient_rolls_back_when_commit_fails():
+    db = MagicMock()
+    professional = MagicMock(spec=User)
+    professional.id = uuid4()
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    data = PatientCreate(
+        first_name="Paciente",
+        last_name="Rollback",
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        patient_service.create_patient(
+            db,
+            data,
+            professional,
+        )
+
+    db.add.assert_called_once()
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_update_patient_rolls_back_when_commit_fails():
+    db = MagicMock()
+    patient = MagicMock(spec=Patient)
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    data = PatientUpdate(
+        notes="Actualización de prueba",
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        patient_service.update_patient(
+            db,
+            patient,
+            data,
+        )
+
+    db.rollback.assert_called_once_with()
+    db.refresh.assert_not_called()
+
+
+def test_delete_patient_rolls_back_when_commit_fails():
+    db = MagicMock()
+    patient = MagicMock(spec=Patient)
+
+    db.commit.side_effect = SQLAlchemyError(
+        "Fallo simulado durante el commit"
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Fallo simulado durante el commit",
+    ):
+        patient_service.delete_patient(
+            db,
+            patient,
+        )
+
+    db.delete.assert_called_once_with(patient)
+    db.rollback.assert_called_once_with()
