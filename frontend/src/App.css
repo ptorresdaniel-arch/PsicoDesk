@@ -1194,3 +1194,259 @@
     flex-direction: column;
   }
 }
+
+/* Ficha individual del paciente */
+
+.patient-detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.patient-detail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+}
+
+.patient-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.patient-detail-identity h2 {
+  margin: 0 0 6px;
+  color: #26314e;
+  font-size: 22px;
+}
+
+.patient-detail-identity p {
+  margin-bottom: 10px;
+  color: #858ca6;
+  font-size: 13px;
+}
+
+.patient-detail-avatar {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  font-size: 19px;
+}
+
+.patient-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.patient-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.patient-detail-summary-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.patient-detail-summary-card > span {
+  color: #858ca6;
+  font-size: 12px;
+}
+
+.patient-detail-summary-card > strong {
+  color: #26314e;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.patient-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.patient-detail-section {
+  padding: 22px;
+  min-width: 0;
+}
+
+.patient-detail-section .panel-header {
+  margin-bottom: 18px;
+}
+
+.patient-detail-section .panel-header h2 {
+  margin: 0 0 6px;
+  color: #26314e;
+  font-size: 16px;
+}
+
+.patient-detail-section .panel-header p {
+  color: #9299b0;
+  font-size: 12px;
+}
+
+.patient-detail-fields {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.patient-detail-fields > div {
+  padding: 14px 0;
+  border-bottom: 1px solid #ededf4;
+}
+
+.patient-detail-fields > div:last-child {
+  border-bottom: 0;
+}
+
+.patient-detail-fields dt {
+  margin-bottom: 6px;
+  color: #858ca6;
+  font-size: 12px;
+}
+
+.patient-detail-fields dd {
+  margin: 0;
+  color: #35405e;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.patient-detail-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.patient-detail-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-detail-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid #ededf4;
+}
+
+.patient-detail-item:first-child {
+  padding-top: 0;
+}
+
+.patient-detail-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.patient-detail-item > div {
+  min-width: 0;
+}
+
+.patient-detail-item strong {
+  display: block;
+  margin-bottom: 7px;
+  color: #35405e;
+  font-size: 13px;
+}
+
+.patient-detail-item p,
+.patient-detail-item small {
+  display: block;
+  margin: 5px 0 0;
+  color: #858ca6;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.patient-detail-item details {
+  margin-top: 12px;
+  color: #68718c;
+  font-size: 12px;
+}
+
+.patient-detail-item summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.patient-detail-item details p {
+  margin-top: 8px;
+}
+
+.patient-detail-empty {
+  padding: 16px 0;
+  color: #858ca6;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.patient-detail-history {
+  grid-column: 1 / -1;
+}
+
+.patient-open-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .patient-detail-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .patient-detail-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-detail-history {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 500px) {
+  .patient-detail-heading,
+  .patient-detail-section {
+    padding: 17px;
+  }
+
+  .patient-detail-identity {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .patient-detail-identity h2 {
+    font-size: 18px;
+  }
+
+  .patient-detail-actions {
+    width: 100%;
+  }
+
+  .patient-detail-actions button {
+    flex: 1 1 auto;
+  }
+
+  .patient-detail-item {
+    flex-direction: column;
+  }
+}

@@ -5,6 +5,8 @@ import type {
   PatientFilters,
   PatientListRead,
   PatientRead,
+  PatientUpdateInput,
+  PatientProfileRead,
 } from '../types/patient'
 
 const API_URL =
@@ -124,6 +126,44 @@ export function createPatient(
     '/patients',
     {
       method: 'POST',
+      body: JSON.stringify(data),
+    },
+    token,
+  )
+}
+
+
+export function getPatient(
+  token: string,
+  patientId: string,
+): Promise<PatientRead> {
+  return apiRequest<PatientRead>(
+    `/patients/${encodeURIComponent(patientId)}`,
+    {},
+    token,
+  )
+}
+
+export function getPatientProfile(
+  token: string,
+  patientId: string,
+): Promise<PatientProfileRead> {
+  return apiRequest<PatientProfileRead>(
+    `/patients/${encodeURIComponent(patientId)}/profile`,
+    {},
+    token,
+  )
+}
+
+export function updatePatient(
+  token: string,
+  patientId: string,
+  data: PatientUpdateInput,
+): Promise<PatientRead> {
+  return apiRequest<PatientRead>(
+    `/patients/${encodeURIComponent(patientId)}`,
+    {
+      method: 'PATCH',
       body: JSON.stringify(data),
     },
     token,

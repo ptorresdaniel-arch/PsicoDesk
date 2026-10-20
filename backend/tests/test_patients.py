@@ -40,7 +40,7 @@ def test_create_patient(
         json={
             "first_name": "Paciente",
             "last_name": "Automatizado",
-            "identification": "PYTEST-001",
+            "identification": "11.111.111-1",
             "birth_date": "1990-05-15",
             "email": "patient@example.com",
             "phone": "+56912345678",
@@ -54,7 +54,7 @@ def test_create_patient(
 
     assert data["first_name"] == "Paciente"
     assert data["last_name"] == "Automatizado"
-    assert data["identification"] == "PYTEST-001"
+    assert data["identification"] == "11.111.111-1"
     assert data["is_active"] is True
 
     assert "id" in data
@@ -464,7 +464,7 @@ def test_search_patient_by_identification(
         json={
             "first_name": "Ana",
             "last_name": "Gómez",
-            "identification": "12345678-9",
+            "identification": "12.345.678-5",
         },
     )
 
@@ -481,7 +481,7 @@ def test_search_patient_by_identification(
     
     assert patients["total"] == 1    
     assert len(patients["items"]) == 1
-    assert patients["items"][0]["identification"] == "12345678-9"
+    assert patients["items"][0]["identification"] == "12.345.678-5"
     
 def test_filter_patients_by_active_status(
     client,

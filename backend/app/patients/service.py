@@ -79,13 +79,28 @@ def apply_patient_filters(
     )
 
     if filters.search:
-        search = f"%{filters.search}%"
-
+        search = f"%{filters.search.strip()}%"
+        
+        normalized_search = (
+            filters.search.strip()
+            .replace(".","")
+            .replace("-","")
+        )
+        
+        normalized_identification = func.replace(
+            func.replace(Patient.identification, ".",""),
+            "-",
+            "",
+        )
+        
         statement = statement.where(
             or_(
                 Patient.first_name.ilike(search),
                 Patient.last_name.ilike(search),
                 Patient.identification.ilike(search),
+                normalized_identification.ilike(
+                    f"%{normalized_search}%"
+                ),
             )
         )
 

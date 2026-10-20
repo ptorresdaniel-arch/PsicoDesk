@@ -1,6 +1,8 @@
 
 import { useEffect, useState, type FormEvent } from 'react'
 import { createPatient, getPatients } from '../services/api'
+import PatientDetail from './PatientDetail'
+import { cleanRutInput, formatRut, isValidRut } from '../utils/rut'
 import type {
   PatientCreateInput,
   PatientListRead,
@@ -64,8 +66,11 @@ export default function PatientsPage({
   const [form, setForm] = useState<PatientForm>(EMPTY_FORM)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [selectedPatientId, setSelectedPatientId] =
+    useState<string | null>(null)
 
   useEffect(() => {
+    if (selectedPatientId) return
     let cancelled = false
 
     getPatients(token, {
@@ -99,7 +104,7 @@ export default function PatientsPage({
     return () => {
       cancelled = true
     }
-  }, [token, appliedSearch, activeFilter, page, reloadKey])
+  }, [token, appliedSearch, activeFilter, page, reloadKey, selectedPatientId])
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -121,19 +126,31 @@ export default function PatientsPage({
     setReloadKey((current) => current + 1)
   }
 
-  async function handleCreatePatient(
-    event: FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault()
 
-    setSaving(true)
-    setError('')
+async function handleCreatePatient(
+  event: FormEvent<HTMLFormElement>,
+) {
+  event.preventDefault()
+
+  const rut = form.identification.trim()
+
+  if (rut && !isValidRut(rut)) {
+    setError(
+      'El RUT ingresado no es válido. Revisa el número y el dígito verificador.',
+    )
     setSuccess('')
+    return
+  }
+
+  setSaving(true)
+  setError('')
+  setSuccess('')
+
 
     const data: PatientCreateInput = {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
-      identification: form.identification.trim() || null,
+      identification: formatRut(rut) || null,
       birth_date: form.birth_date || null,
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
@@ -164,6 +181,27 @@ export default function PatientsPage({
     1,
     Math.ceil(result.total / result.limit),
   )
+
+  
+if (selectedPatientId) {
+  return (
+    <PatientDetail
+      token={token}
+      patientId={selectedPatientId}
+      onBack={() => {
+        setLoading(true)
+        setError('')
+        setSuccess('')
+        setSelectedPatientId(null)
+        setReloadKey((current) => current + 1)
+      }}
+      onUpdated={() => {
+        setReloadKey((current) => current + 1)
+      }}
+    />
+  )
+}
+
 
   return (
     <section className="patients-page">
@@ -246,19 +284,31 @@ export default function PatientsPage({
               />
             </label>
 
-            <label className="form-field">
-              Identificación
-              <input
-                maxLength={50}
-                value={form.identification}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    identification: event.target.value,
-                  })
-                }
-              />
-            </label>
+
+<label className="form-field">
+  RUT
+  <input
+    type="text"
+    inputMode="text"
+    autoCapitalize="characters"
+    maxLength={12}
+    placeholder="12.345.678-5"
+    value={form.identification}
+    onChange={(event) =>
+      setForm({
+        ...form,
+        identification: cleanRutInput(event.target.value),
+      })
+    }
+    onBlur={() =>
+      setForm((current) => ({
+        ...current,
+        identification: formatRut(current.identification),
+      }))
+    }
+  />
+</label>
+
 
             <label className="form-field">
               Fecha de nacimiento
@@ -423,53 +473,67 @@ export default function PatientsPage({
                 <thead>
                   <tr>
                     <th>Paciente</th>
-                    <th>Identificación</th>
+                    <th>RUT</th>
                     <th>Contacto</th>
                     <th>Fecha de nacimiento</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {result.items.map((patient) => (
-                    <tr key={patient.id}>
-                      <td>
-                        <div className="patient-name-cell">
-                          <span className="patient-avatar">
-                            {patient.first_name
-                              .charAt(0)
-                              .toUpperCase()}
-                            {patient.last_name
-                              .charAt(0)
-                              .toUpperCase()}
-                          </span>
-                          <div>
-                            <strong>
-                              {patient.first_name}{' '}
-                              {patient.last_name}
-                            </strong>
-                            <small>{patient.email || 'Sin correo'}</small>
+                  {result.items.map((patient) => {
+                    return (
+                      <tr key={patient.id}>
+                        <td>
+                          <div className="patient-name-cell">
+                            <span className="patient-avatar">
+                              {patient.first_name
+                                .charAt(0)
+                                .toUpperCase()}
+                              {patient.last_name
+                                .charAt(0)
+                                .toUpperCase()}
+                            </span>
+                            <div>
+                              <strong>
+                                {patient.first_name}{' '}
+                                {patient.last_name}
+                              </strong>
+                              <small>{patient.email || 'Sin correo'}</small>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td>{patient.identification || '—'}</td>
+                        <td>{formatRut(patient.identification) || '-'}</td>
 
-                      <td>{patient.phone || '—'}</td>
+                        <td>{patient.phone || '—'}</td>
 
-                      <td>{formatDate(patient.birth_date)}</td>
+                        <td>{formatDate(patient.birth_date)}</td>
 
-                      <td>
-                        <span
-                          className={`patient-state ${
-                            patient.is_active ? 'active' : 'inactive'
-                          }`}
-                        >
-                          {patient.is_active ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                        <td>
+                          <span
+                            className={`patient-state ${patient.is_active ? 'active' : 'inactive'}`}
+                          >
+                            {patient.is_active ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            className="secondary-button patient-open-button"
+                            type="button"
+                            onClick={() => {
+                              setSelectedPatientId(patient.id)
+                              setError('')
+                              setSuccess('')
+                            } }
+                          >
+                            Ver ficha
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
