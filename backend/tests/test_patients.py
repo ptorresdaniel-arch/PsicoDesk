@@ -744,3 +744,170 @@ def test_delete_patient_rolls_back_when_commit_fails():
 
     db.delete.assert_called_once_with(patient)
     db.rollback.assert_called_once_with()
+    
+def test_patient_profile_selects_nearest_valid_upcoming_appointment(
+    client,
+    professional_headers,
+    monkeypatch,
+):
+    fixed_now = datetime(
+        2026, 10, 16, 12, 0,
+        tzinfo=timezone.utc,
+    )
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            if tz is None:
+                return fixed_now.replace(tzinfo=None)
+            return fixed_now.astimezone(tz)
+
+    monkeypatch.setattr(
+        "app.patients.service.datetime",
+        FixedDateTime,
+    )
+
+    patient_response = client.post(
+        "/patients",
+        headers=professional_headers,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Proxima",
+        },
+    )
+
+    assert patient_response.status_code == 201
+    patient_id = patient_response.json()["id"]
+
+    # Cita válida más cercana.
+    nearest_start = fixed_now + timedelta(days=1)
+    nearest_end = nearest_start + timedelta(minutes=50)
+
+    nearest_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": nearest_start.isoformat(),
+            "end_time": nearest_end.isoformat(),
+        },
+    )
+
+    assert nearest_response.status_code == 201
+
+    # Cita válida posterior.
+    later_start = fixed_now + timedelta(days=3)
+    later_end = later_start + timedelta(minutes=50)
+
+    later_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": later_start.isoformat(),
+            "end_time": later_end.isoformat(),
+        },
+    )
+
+    assert later_response.status_code == 201
+
+    later_appointment_id = later_response.json()["id"]
+
+    confirmed_response = client.patch(
+        f"/appointments/{later_appointment_id}",
+        headers=professional_headers,
+        json={"status": "confirmed"},
+    )
+
+    assert confirmed_response.status_code == 200
+
+    # Cita cancelada: debe ignorarse.
+    cancelled_start = fixed_now + timedelta(days=2)
+    cancelled_end = cancelled_start + timedelta(minutes=50)
+
+    cancelled_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": cancelled_start.isoformat(),
+            "end_time": cancelled_end.isoformat(),
+        },
+    )
+
+    assert cancelled_response.status_code == 201
+
+    cancelled_id = cancelled_response.json()["id"]
+
+    cancelled_update = client.patch(
+        f"/appointments/{cancelled_id}",
+        headers=professional_headers,
+        json={"status": "cancelled"},
+    )
+
+    assert cancelled_update.status_code == 200
+
+    # No-show: debe ignorarse.
+    no_show_start = fixed_now + timedelta(days=4)
+    no_show_end = no_show_start + timedelta(minutes=50)
+
+    no_show_response = client.post(
+        "/appointments",
+        headers=professional_headers,
+        json={
+            "patient_id": patient_id,
+            "start_time": no_show_start.isoformat(),
+            "end_time": no_show_end.isoformat(),
+        },
+    )
+
+    assert no_show_response.status_code == 201
+
+    no_show_id = no_show_response.json()["id"]
+
+    confirmed_response = client.patch(
+        f"/appointments/{no_show_id}",
+        headers=professional_headers,
+        json={"status": "confirmed"},
+    )
+
+    assert confirmed_response.status_code == 200
+
+    no_show_update = client.patch(
+        f"/appointments/{no_show_id}",
+        headers=professional_headers,
+        json={"status": "no_show"},
+    )
+
+    assert no_show_update.status_code == 200
+
+    profile_response = client.get(
+        f"/patients/{patient_id}/profile",
+        headers=professional_headers,
+    )
+
+    assert profile_response.status_code == 200
+
+    profile = profile_response.json()
+
+    assert profile["summary"]["next_appointment_date"] is not None
+
+    returned_next = datetime.fromisoformat(
+        profile["summary"]["next_appointment_date"]
+    )
+
+    assert returned_next.astimezone(timezone.utc) == nearest_start
+
+    assert len(profile["upcoming_appointments"]) == 2
+
+    returned_dates = [
+        datetime.fromisoformat(
+            appointment["start_time"]
+        ).astimezone(timezone.utc)
+        for appointment in profile["upcoming_appointments"]
+    ]
+
+    assert returned_dates == [
+        nearest_start,
+        later_start,
+    ]

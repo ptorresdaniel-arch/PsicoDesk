@@ -229,34 +229,6 @@ def test_assign_permission_to_role(
 
     assert permission in role.permissions
     
-def test_assign_permission_to_role(
-    db,
-):
-    role = Role(
-        name="permission-test-role",
-    )
-
-    permission = Permission(
-        code="permission.test",
-    )
-
-    db.add_all([
-        role,
-        permission,
-    ])
-    db.commit()
-    db.refresh(role)
-    db.refresh(permission)
-
-    assign_permission_to_role(
-        db,
-        role,
-        permission,
-    )
-
-    db.refresh(role)
-
-    assert permission in role.permissions
     
 def test_admin_can_assign_permission_to_role(
     client,
