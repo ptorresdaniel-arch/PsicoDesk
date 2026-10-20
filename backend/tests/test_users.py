@@ -465,13 +465,13 @@ def test_user_without_permission_cannot_remove_role(
 ):
     response = client.delete(
         "/users/00000000-0000-0000-0000-000000000000/"
-        "00000000-0000-0000-0000-000000000000",
+        "roles/00000000-0000-0000-0000-000000000000",
         headers=auth_headers,
     )
 
     assert response.status_code == 403
 
-def test_user_without_permission_cannot_remove_role(
+def test_user_without_permission_cannot_remove_role_from_existing_user(
     client,
     auth_headers,
     db,
