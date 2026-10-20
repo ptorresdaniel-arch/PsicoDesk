@@ -862,3 +862,53 @@ def test_delete_clinical_session_rolls_back_when_commit_fails():
 
     db.delete.assert_called_once_with(clinical_session)
     db.rollback.assert_called_once_with()
+
+def test_professional_cannot_list_another_professionals_sessions(
+    client: TestClient,
+    professional_factory,
+) -> None:
+    professional_a = professional_factory()
+    professional_b = professional_factory()
+
+    patient_response = client.post(
+        "/patients",
+        headers=professional_a,
+        json={
+            "first_name": "Paciente",
+            "last_name": "Privado",
+        },
+    )
+
+    assert patient_response.status_code == 201
+
+    patient_id = patient_response.json()["id"]
+
+    session_response = client.post(
+        "/clinical-sessions",
+        headers=professional_a,
+        json={
+            "patient_id": patient_id,
+            "session_date": datetime.now(
+                timezone.utc
+            ).isoformat(),
+            "duration_minutes": 45,
+            "summary": "Sesión privada",
+            "notes": "Información confidencial.",
+        },
+    )
+
+    assert session_response.status_code == 201
+
+    response = client.get(
+        f"/clinical-sessions/patient/{patient_id}",
+        headers=professional_b,
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["items"] == []
+    assert data["total"] == 0
+    assert data["page"] == 1
+    assert data["limit"] == 20
