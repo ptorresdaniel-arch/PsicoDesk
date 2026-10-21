@@ -9,10 +9,11 @@ import type {
 } from './types/dashboard'
 
 import PatientsPage from './pages/PatientsPage'
+import AppointmentsPage from './pages/AppointmentsPage'
 
 const TOKEN_KEY = 'psicodesk_token'
 
-type ActiveView = 'dashboard' | 'patients'
+type ActiveView = 'dashboard' | 'patients' | 'appointments'
 
 function formatTime(value: string): string {
   return new Date(value).toLocaleTimeString('es-CL', {
@@ -325,9 +326,8 @@ function App() {
           aria-label="Menú principal"
         >
           <a
-            className={`nav-link ${
-              activeView === 'dashboard' ? 'active' : ''
-            }`}
+            className={`nav-link ${activeView === 'dashboard' ? 'active' : ''
+              }`}
             href="#inicio"
             onClick={(event) => {
               event.preventDefault()
@@ -339,9 +339,8 @@ function App() {
           </a>
 
           <a
-            className={`nav-link ${
-              activeView === 'patients' ? 'active' : ''
-            }`}
+            className={`nav-link ${activeView === 'patients' ? 'active' : ''
+              }`}
             href="#pacientes"
             onClick={(event) => {
               event.preventDefault()
@@ -352,10 +351,20 @@ function App() {
             Pacientes
           </a>
 
-          <a className="nav-link" href="#agenda">
+
+          <a
+            className={`nav-link ${activeView === 'appointments' ? 'active' : ''
+              }`}
+            href="#agenda"
+            onClick={(event) => {
+              event.preventDefault()
+              setActiveView('appointments')
+            }}
+          >
             <span className="nav-icon">▦</span>
             Agenda
           </a>
+
 
           <a className="nav-link" href="#sesiones">
             <span className="nav-icon">✓</span>
@@ -388,22 +397,29 @@ function App() {
             <h1>
               {activeView === 'patients'
                 ? 'Gestión de pacientes'
-                : 'Buenos días'}
+                : activeView === 'appointments'
+                  ? 'Agenda de citas'
+                  : 'Buenos días'}
             </h1>
 
             <p>
               {activeView === 'patients'
                 ? 'Consulta y administra las fichas de tus pacientes.'
-                : 'Aquí tienes un resumen de tu consulta.'}
+                : activeView === 'appointments'
+                  ? 'Consulta y organiza las citas de tu consulta.'
+                  : 'Aquí tienes un resumen de tu consulta.'}
             </p>
           </div>
 
           <div className="header-actions">
             {activeView === 'dashboard' && (
-              <a className="primary-button" href="#agenda">
-                Ver agenda
-                <span aria-hidden="true">→</span>
-              </a>
+              <button
+              className="primary-button"
+              type="button"
+              onClick={() => setActiveView('appointments')}
+              >
+                Ver agenda <span aria-hidden="true">→</span>
+              </button>
             )}
 
             <button
@@ -418,6 +434,8 @@ function App() {
 
         {activeView === 'patients' ? (
           <PatientsPage token={token} />
+        ) : activeView === 'appointments' ? (
+          <AppointmentsPage token={token} />
         ) : (
           <>
             {error && (
@@ -467,7 +485,7 @@ function App() {
 
                 <div className="appointment-list">
                   {dashboard.today_appointments.length ===
-                  0 ? (
+                    0 ? (
                     <p className="empty-state">
                       No tienes citas programadas para hoy.
                     </p>

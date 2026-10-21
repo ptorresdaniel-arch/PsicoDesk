@@ -8,6 +8,12 @@ import type {
   PatientUpdateInput,
   PatientProfileRead,
 } from '../types/patient'
+import type {
+  AppointmentCalendarRead,
+  AppointmentCreateInput,
+  AppointmentRead,
+  AppointmentUpdateInput,
+} from '../types/appointment'
 
 const API_URL =
   import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
@@ -162,6 +168,53 @@ export function updatePatient(
 ): Promise<PatientRead> {
   return apiRequest<PatientRead>(
     `/patients/${encodeURIComponent(patientId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    },
+    token,
+  )
+}
+
+
+export function getCalendarAppointments(
+  token: string,
+  startDate: string,
+  endDate: string,
+): Promise<AppointmentCalendarRead[]> {
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+  })
+
+  return apiRequest<AppointmentCalendarRead[]>(
+    `/appointments/calendar?${params.toString()}`,
+    {},
+    token,
+  )
+}
+
+export function createAppointment(
+  token: string,
+  data: AppointmentCreateInput,
+): Promise<AppointmentRead> {
+  return apiRequest<AppointmentRead>(
+    '/appointments',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+    token,
+  )
+}
+
+export function updateAppointment(
+  token: string,
+  appointmentId: string,
+  data: AppointmentUpdateInput,
+): Promise<AppointmentRead> {
+  return apiRequest<AppointmentRead>(
+    `/appointments/${encodeURIComponent(appointmentId)}`,
     {
       method: 'PATCH',
       body: JSON.stringify(data),

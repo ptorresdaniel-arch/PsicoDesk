@@ -1450,3 +1450,909 @@
     flex-direction: column;
   }
 }
+
+
+/* Agenda de citas */
+
+.appointments-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.appointments-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.appointments-toolbar h2 {
+  margin: 0 0 8px;
+  color: #202b49;
+  font-size: 25px;
+}
+
+.appointments-toolbar p {
+  color: #8189a4;
+  font-size: 13px;
+}
+
+.agenda-date-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.agenda-date-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #8189a4;
+  font-size: 12px;
+}
+
+.agenda-date-picker input {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #e1e5ef;
+  border-radius: 9px;
+  color: #26314e;
+  background: #fff;
+  font: inherit;
+}
+
+.agenda-date-picker strong {
+  color: #26314e;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.appointment-form,
+.agenda-list-panel {
+  min-width: 0;
+}
+
+.appointment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.appointment-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.appointment-form-grid .form-field {
+  min-width: 0;
+}
+
+.appointment-form-grid input,
+.appointment-form-grid select,
+.appointment-form-grid textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.appointment-notes {
+  grid-column: 1 / -1;
+}
+
+.appointment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.agenda-list-panel {
+  overflow: hidden;
+}
+
+.agenda-list-panel .appointment-list {
+  padding: 0;
+}
+
+.agenda-list-panel .appointment-row {
+  padding: 18px 24px;
+  border-top: 1px solid #f0f1f6;
+}
+
+.agenda-list-panel .appointment-row:first-child {
+  border-top: 0;
+}
+
+.agenda-list-panel .appointment-info {
+  min-width: 0;
+}
+
+.agenda-list-panel .appointment-info strong,
+.agenda-list-panel .appointment-info span {
+  overflow-wrap: anywhere;
+}
+
+.success-banner {
+  padding: 13px 16px;
+  border: 1px solid #ccebdc;
+  border-radius: 10px;
+  background: #effaf4;
+  color: #21845e;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .appointments-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .agenda-date-panel {
+    align-items: stretch;
+  }
+
+  .agenda-date-picker {
+    width: 100%;
+  }
+
+  .appointment-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .appointment-notes {
+    grid-column: auto;
+  }
+
+  .agenda-list-panel .appointment-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
+
+/* Agenda semanal */
+
+.agenda-week-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.agenda-week-label span {
+  color: #8189a4;
+  font-size: 12px;
+}
+
+.agenda-week-label strong {
+  color: #26314e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.agenda-selected-date {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.agenda-selected-date .form-field {
+  max-width: 260px;
+}
+
+.agenda-selected-date p {
+  padding-bottom: 12px;
+  color: #8189a4;
+  font-size: 13px;
+}
+
+.agenda-selected-date strong {
+  color: #26314e;
+}
+
+.weekly-calendar-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border-top: 1px solid #edf0f6;
+  scrollbar-width: thin;
+}
+
+.weekly-calendar {
+  min-width: 1000px;
+  color: #26314e;
+}
+
+.weekly-calendar-header {
+  display: grid;
+  grid-template-columns: 60px repeat(7, minmax(0, 1fr));
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  border-bottom: 1px solid #e8ebf3;
+}
+
+.weekly-time-gutter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8189a4;
+  font-size: 11px;
+}
+
+.weekly-day-heading {
+  min-width: 0;
+  min-height: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-left: 1px solid #edf0f6;
+  background: transparent;
+  color: #8189a4;
+  cursor: pointer;
+}
+
+.weekly-day-heading span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+}
+
+.weekly-day-heading strong {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #26314e;
+  font-size: 13px;
+}
+
+.weekly-day-heading.selected {
+  background: #f3f0ff;
+  color: #7154d8;
+}
+
+.weekly-day-heading.selected strong {
+  background: #7657dc;
+  color: #fff;
+}
+
+.weekly-calendar-body {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+}
+
+.weekly-time-column {
+  background: #fff;
+}
+
+.weekly-time-slot {
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 5px;
+  color: #8991a8;
+  font-size: 10px;
+  text-align: center;
+  transform: translateY(-7px);
+}
+
+.weekly-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekly-day-column {
+  min-width: 0;
+  border-left: 1px solid #edf0f6;
+  background: #fff;
+}
+
+.weekly-day-column.selected {
+  background: #fcfbff;
+}
+
+.weekly-day-track {
+  height: 720px;
+  position: relative;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 29px,
+    #edf0f6 29px,
+    #edf0f6 30px
+  );
+}
+
+.weekly-slot {
+  height: 30px;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(237, 240, 246, 0.35);
+}
+
+.weekly-event {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  z-index: 1;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 6px;
+  border-left: 3px solid #7657dc;
+  border-radius: 5px;
+  background: #eee9ff;
+  color: #44358a;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.weekly-event strong,
+.weekly-event span,
+.weekly-event small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+
+.weekly-event strong {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.weekly-event span {
+  font-size: 10px;
+}
+
+.weekly-event small {
+  font-size: 9px;
+}
+
+.weekly-event.confirmed {
+  border-left-color: #2583d8;
+  background: #e2f0ff;
+  color: #214f83;
+}
+
+.weekly-event.completed {
+  border-left-color: #26966b;
+  background: #def6e9;
+  color: #176344;
+}
+
+.weekly-event.cancelled,
+.weekly-event.other {
+  border-left-color: #9299aa;
+  background: #edf0f5;
+  color: #515b70;
+}
+
+.weekly-event.scheduled {
+  border-left-color: #7657dc;
+  background: #eee9ff;
+  color: #44358a;
+}
+
+.agenda-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 20px;
+  border-top: 1px solid #edf0f6;
+}
+
+.agenda-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #68718b;
+  font-size: 11px;
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: #9299aa;
+}
+
+.legend-dot.scheduled {
+  background: #7657dc;
+}
+
+.legend-dot.confirmed {
+  background: #2583d8;
+}
+
+.legend-dot.completed {
+  background: #26966b;
+}
+
+.agenda-selected-summary {
+  padding: 20px;
+  border-top: 1px solid #edf0f6;
+}
+
+.agenda-selected-summary h3 {
+  margin: 0 0 14px;
+  color: #26314e;
+  font-size: 16px;
+}
+
+.agenda-selected-summary > p {
+  color: #8189a4;
+  font-size: 13px;
+}
+
+.agenda-selected-summary .appointment-list {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .agenda-week-label {
+    order: -1;
+    width: 100%;
+  }
+
+  .agenda-selected-date {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .agenda-selected-date p {
+    padding-bottom: 0;
+  }
+
+  .agenda-legend {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .agenda-selected-summary {
+    padding: 14px;
+  }
+}
+
+/* Ajustes para agenda diaria y calendario semanal en modal */
+
+.appointments-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.agenda-day-panel {
+  align-items: center;
+}
+
+.agenda-day-label {
+  flex: 1;
+  min-width: 190px;
+}
+
+.agenda-day-panel .agenda-date-picker {
+  min-width: 160px;
+}
+
+.agenda-day-list-panel {
+  min-height: 250px;
+}
+
+.agenda-day-list-panel .panel-header {
+  margin-bottom: 8px;
+}
+
+.agenda-day-list-panel .appointment-list {
+  padding: 0;
+}
+
+.agenda-day-list-panel .appointment-row {
+  padding: 18px 8px;
+  border-top: 1px solid #f0f1f6;
+}
+
+.agenda-day-list-panel .appointment-row:first-child {
+  border-top: 0;
+}
+
+.weekly-calendar-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgb(25 27 48 / 58%);
+  backdrop-filter: blur(3px);
+}
+
+.weekly-calendar-modal {
+  width: min(1400px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 24px;
+  border: 1px solid #e8e8f1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgb(20 22 45 / 24%);
+}
+
+.weekly-calendar-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.weekly-calendar-modal-header h2 {
+  margin: 0 0 8px;
+  color: #202b49;
+  font-size: 23px;
+  letter-spacing: -0.5px;
+}
+
+.weekly-calendar-modal-header p {
+  margin: 0;
+  color: #8189a4;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.weekly-calendar-modal-header .eyebrow {
+  margin-bottom: 8px;
+}
+
+.weekly-calendar-close {
+  flex-shrink: 0;
+}
+
+.weekly-modal-date-panel {
+  margin-bottom: 16px;
+  box-shadow: none;
+}
+
+.weekly-calendar-modal .weekly-calendar-scroll {
+  max-height: min(62vh, 620px);
+  overflow: auto;
+}
+
+.weekly-calendar-modal .weekly-calendar {
+  min-width: 1000px;
+}
+
+.weekly-calendar-modal .agenda-legend {
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
+.weekly-calendar-modal .patients-loading {
+  min-height: 100px;
+}
+
+@media (max-width: 700px) {
+  .appointments-toolbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .appointments-toolbar-actions button {
+    flex: 1 1 auto;
+  }
+
+  .agenda-day-panel {
+    align-items: stretch;
+  }
+
+  .agenda-day-label {
+    order: -1;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .agenda-day-panel .agenda-date-picker {
+    width: 100%;
+  }
+
+  .weekly-calendar-modal-overlay {
+    padding: 8px;
+  }
+
+  .weekly-calendar-modal {
+    max-height: calc(100dvh - 16px);
+    padding: 15px;
+    border-radius: 13px;
+  }
+
+  .weekly-calendar-modal-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .weekly-calendar-modal-header h2 {
+    font-size: 20px;
+  }
+
+  .weekly-calendar-close {
+    align-self: flex-end;
+  }
+
+  .weekly-modal-date-panel {
+    align-items: stretch;
+    gap: 9px;
+    padding: 14px;
+  }
+
+  .weekly-modal-date-panel .agenda-week-label {
+    order: -1;
+    width: 100%;
+  }
+
+  .weekly-calendar-modal .weekly-calendar-scroll {
+    max-height: calc(100dvh - 300px);
+  }
+
+  .agenda-day-list-panel .appointment-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 4px;
+  }
+}
+
+/* Ajustes para agenda diaria y calendario semanal en modal */
+
+.appointments-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.agenda-day-panel {
+  align-items: center;
+}
+
+.agenda-day-label {
+  flex: 1;
+  min-width: 190px;
+}
+
+.agenda-day-panel .agenda-date-picker {
+  min-width: 160px;
+}
+
+.agenda-day-list-panel {
+  min-height: 250px;
+}
+
+.agenda-day-list-panel .panel-header {
+  margin-bottom: 8px;
+}
+
+.agenda-day-list-panel .appointment-list {
+  padding: 0;
+}
+
+.agenda-day-list-panel .appointment-row {
+  padding: 18px 8px;
+  border-top: 1px solid #f0f1f6;
+}
+
+.agenda-day-list-panel .appointment-row:first-child {
+  border-top: 0;
+}
+
+.weekly-calendar-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgb(25 27 48 / 58%);
+  backdrop-filter: blur(3px);
+}
+
+.weekly-calendar-modal {
+  width: min(1400px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 24px;
+  border: 1px solid #e8e8f1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgb(20 22 45 / 24%);
+}
+
+.weekly-calendar-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.weekly-calendar-modal-header h2 {
+  margin: 0 0 8px;
+  color: #202b49;
+  font-size: 23px;
+  letter-spacing: -0.5px;
+}
+
+.weekly-calendar-modal-header p {
+  margin: 0;
+  color: #8189a4;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.weekly-calendar-modal-header .eyebrow {
+  margin-bottom: 8px;
+}
+
+.weekly-calendar-close {
+  flex-shrink: 0;
+}
+
+.weekly-modal-date-panel {
+  margin-bottom: 16px;
+  box-shadow: none;
+}
+
+.weekly-calendar-modal .weekly-calendar-scroll {
+  max-height: min(62vh, 620px);
+  overflow: auto;
+}
+
+.weekly-calendar-modal .weekly-calendar {
+  min-width: 1000px;
+}
+
+.weekly-calendar-modal .agenda-legend {
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
+.weekly-calendar-modal .patients-loading {
+  min-height: 100px;
+}
+
+@media (max-width: 700px) {
+  .appointments-toolbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .appointments-toolbar-actions button {
+    flex: 1 1 auto;
+  }
+
+  .agenda-day-panel {
+    align-items: stretch;
+  }
+
+  .agenda-day-label {
+    order: -1;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .agenda-day-panel .agenda-date-picker {
+    width: 100%;
+  }
+
+  .weekly-calendar-modal-overlay {
+    padding: 8px;
+  }
+
+  .weekly-calendar-modal {
+    max-height: calc(100dvh - 16px);
+    padding: 15px;
+    border-radius: 13px;
+  }
+
+  .weekly-calendar-modal-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .weekly-calendar-modal-header h2 {
+    font-size: 20px;
+  }
+
+  .weekly-calendar-close {
+    align-self: flex-end;
+  }
+
+  .weekly-modal-date-panel {
+    align-items: stretch;
+    gap: 9px;
+    padding: 14px;
+  }
+
+  .weekly-modal-date-panel .agenda-week-label {
+    order: -1;
+    width: 100%;
+  }
+
+  .weekly-calendar-modal .weekly-calendar-scroll {
+    max-height: calc(100dvh - 300px);
+  }
+
+  .agenda-day-list-panel .appointment-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 4px;
+  }
+}
+
+
+/* Legibilidad de las citas dentro de la cuadrícula semanal */
+.weekly-calendar-modal .weekly-event {
+  gap: 4px;
+  padding: 6px 8px;
+  border-left-width: 4px;
+  border-radius: 7px;
+  line-height: 1.25;
+}
+
+.weekly-calendar-modal .weekly-event strong {
+  display: block;
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weekly-calendar-modal .weekly-event span {
+  display: block;
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 700px) {
+  .weekly-calendar-modal .weekly-event {
+    gap: 3px;
+    padding: 5px 6px;
+  }
+
+  .weekly-calendar-modal .weekly-event strong {
+    font-size: 10px;
+  }
+
+  .weekly-calendar-modal .weekly-event span {
+    font-size: 9px;
+  }
+}
